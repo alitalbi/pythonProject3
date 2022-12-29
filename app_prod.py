@@ -12,7 +12,8 @@ import os
 import datetime
 
 
-def smooth_data(ticker, date_start, date_start2, date_end, frequency):
+def smooth_data(ticker, date_start, date_start2, date_end):
+    frequency = "monthly"
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     data_ = pd.DataFrame(
         fred.get_series(ticker, observation_start=date_start, observation_end=date_end, freq=frequency))
@@ -69,11 +70,11 @@ timeout = 20
 
 app.layout = html.Div([
    # dcc.Interval(id="interval_comp",interval=15*1000),
-
-    html.Div([dcc.Input("INDPRO",placeholder="ticker",id="ticker"),
+    html.H1("Secular & Cyclical Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
+    html.Br(),
+    html.Div([html.P("Ticker"),dcc.Input("INDPRO",placeholder="ticker",id="ticker",style={"display":"inline-block"}),
             dcc.Input(date_start_,placeholder="start date",id="date_start"),
-            dcc.Input(date_end_,placeholder="end date",id="date_end"),
-            dcc.Input(frequency_,placeholder="frequency" ,id="frequency")],style={"height":'40px'}),
+            dcc.Input(date_end_,placeholder="end date",id="date_end")],style={"height":'40px'}),
 
     html.Div(id="graph_indicator"),
 
@@ -93,16 +94,17 @@ app.layout = html.Div([
               [Input("ticker","value"),
                Input("date_start","value"),
                Input("date_end","value"),
-               Input("frequency","value")]
+              ]
 
 )
-def smoothed_2(ticker, date_start, date_end, frequency):
+def smoothed_2(ticker, date_start, date_end):
     try:
+
         fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
         date_start2 = "2009-01-01"
         # get data as an array and transforming it into a dataframe
 
-        indpro,indpro_10 = smooth_data(ticker,date_start,date_start2,date_end,frequency)
+        indpro,indpro_10 = smooth_data(ticker,date_start,date_start2,date_end)
 
 
         fig_ = go.Figure()
@@ -127,7 +129,7 @@ def smoothed_2(ticker, date_start, date_end, frequency):
             yaxis=dict(tickformat=".0%"),
             title_font_family="Arial Black",
             font=dict(
-                family="Arial",
+                family="Rockwell",
                 size=16),
             legend=dict(
                 title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
@@ -147,22 +149,23 @@ def smoothed_2(ticker, date_start, date_end, frequency):
               [Input("dropdown", "value"),
                Input("date_start","value"),
                Input("date_end","value"),
-               Input("frequency","value")]
+               ]
               )
-def trends(dropdown,date_start,date_end,frequency):
+def trends(dropdown,date_start,date_end):
     date_start2 = "2009-01-01"
     print("1")
     #try:
+
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     # Data importing
     print("2")
-    pcec96, pcec96_10 = smooth_data("PCEC96", date_start, date_start2, date_end, frequency)
+    pcec96, pcec96_10 = smooth_data("PCEC96", date_start, date_start2, date_end)
     print("3")
-    indpro, indpro_10 = smooth_data("INDPRO", date_start, date_start2, date_end, frequency)
+    indpro, indpro_10 = smooth_data("INDPRO", date_start, date_start2, date_end)
     print('4')
-    nonfarm, nonfarm_10 = smooth_data("PAYEMS", date_start, date_start2, date_end, frequency)
+    nonfarm, nonfarm_10 = smooth_data("PAYEMS", date_start, date_start2, date_end)
     print("5")
-    real_pers, real_pers_10 = smooth_data("W875RX1", date_start, date_start2, date_end, frequency)
+    real_pers, real_pers_10 = smooth_data("W875RX1", date_start, date_start2, date_end)
     print("6")
     # pcec96 =
     pce_title = fred.get_series_info("PCEC96").title
