@@ -72,11 +72,12 @@ app.layout = html.Div([
    # dcc.Interval(id="interval_comp",interval=15*1000),
     html.H1("Secular & Cyclical Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
     html.Br(),
-    html.Div([html.P("Ticker"),dcc.Input("INDPRO",placeholder="ticker",id="ticker",style={"display":"inline-block"}),
+    html.Div([dcc.Input("INDPRO",placeholder="ticker",id="ticker"),
             dcc.Input(date_start_,placeholder="start date",id="date_start"),
-            dcc.Input(date_end_,placeholder="end date",id="date_end")],style={"height":'40px'}),
+            dcc.Input(date_end_,placeholder="end date",id="date_end")],style={'margin-left':'650px'}),
+              html.Div(id="graph_indicator",style={'margin-left':'300px'}),
 
-    html.Div(id="graph_indicator"),
+    #html.Div(,style={"margin-top":"10px"}),
 
         html.Div(dcc.Dropdown( id = 'dropdown',
         options = [
@@ -135,7 +136,7 @@ def smoothed_2(ticker, date_start, date_end):
                 title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
             )
         )
-        fig_.update_layout(height=650,width=1250)
+        fig_.update_layout(height=650,width=1150)
 
         # saving the figures in the static file
         #plt.savefig('/Users/talbi/Downloads/microblog/app/static/' + ticker + ".png")
