@@ -7,7 +7,8 @@ from fredapi import Fred
 import pandas as pd
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
-
+import dash_bootstrap_components as dbc
+import socket
 import os
 import datetime
 
@@ -68,8 +69,20 @@ app.config.suppress_callback_exceptions = True
 
 timeout = 20
 
-app.layout = html.Div([
+app.layout = html.Div(style = {'backgroundColor':"rgb(255, 255, 255)"},children = [
    # dcc.Interval(id="interval_comp",interval=15*1000),
+    dbc.Tabs(
+                [
+                    dbc.Tab(label="Volatility Indicators", tab_id="Volatility Indicators"),
+                    dbc.Tab(label="Macroeconomic Indicators", tab_id="Macroeconomic Indicators"),
+                    dbc.Tab(label="Directional Indicators", tab_id="Directional Indicators"),
+                    dbc.Tab(label="Trend-Momentum Indicators", tab_id="Trend-Momentum Indicators"),
+
+                ],
+                id="tabs",
+                active_tab="Macroeconomic Indicators",
+            ),
+
     html.H1("Secular & Cyclical Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
     html.Br(),
     html.Div([dcc.Input("INDPRO",placeholder="ticker",id="ticker"),
@@ -84,21 +97,22 @@ app.layout = html.Div([
             {'label':'Cyclical Trends (6-18 month view)', 'value':'cyclical_trends' },
             {'label': 'Secular Trends (3-5 year view)', 'value':'secular_trends'},
             ],
-        value = 'cyclical_trends')),
-    html.Div(id="trends_graphs")
+        value = 'cyclical_trends'),style={"width":"350px","margin-left":"300px"}),
+    html.Div(id="trends_graphs",style={"margin-left":"100px"})
     ])
 
 
 
 @app.callback(Output("graph_indicator","children"),
               #Input("interval_comp","n_intervals"),
-              [Input("ticker","value"),
+              [Input("tabs","active_tab"),
+               Input("ticker","value"),
                Input("date_start","value"),
                Input("date_end","value"),
               ]
 
 )
-def smoothed_2(ticker, date_start, date_end):
+def smoothed_2(tabs,ticker, date_start, date_end):
     try:
 
         fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
@@ -114,11 +128,11 @@ def smoothed_2(ticker, date_start, date_end):
 
 
         # ploting the data
-        fig_.add_trace(go.Scatter(x=indpro.index.to_list(),y =indpro._6m_smoothing_growth/100,name="6m growth average",mode="lines",line=dict(width=2, color='black')))
+        fig_.add_trace(go.Scatter(x=indpro.index.to_list(),y =indpro._6m_smoothing_growth/100,name="6m growth average",mode="lines",line=dict(width=2, color='white')))
         fig_.add_trace(go.Scatter(x=(indpro_10.index.to_list())[len(indpro_10) - 19:],y =indpro_10['10 yr average'][len(indpro_10) - 19:]/100,mode="lines",line=dict(width=2, color='green'),name="10yr average"))
 
         fig_.update_layout(
-            template="plotly_white",
+            template="plotly_dark",
             title={
                 'text': fred.get_series_info(ticker).title,
                 'y': 0.9,
@@ -140,7 +154,15 @@ def smoothed_2(ticker, date_start, date_end):
 
         # saving the figures in the static file
         #plt.savefig('/Users/talbi/Downloads/microblog/app/static/' + ticker + ".png")
-        return dcc.Graph(figure=fig_),
+        if tabs == "Macroeconomic Indicators":
+            return dcc.Graph(figure=fig_),
+        elif tabs == "Directional Indicators":
+            pass
+        elif tabs == "Trend-Momentum Indicators":
+            pass
+        elif tabs == "Volatility Indicators":
+            pass
+
     except ValueError:
         pass
 
@@ -148,11 +170,12 @@ def smoothed_2(ticker, date_start, date_end):
 @app.callback(Output("trends_graphs", "children"),
               # Input("interval_comp","n_intervals"),
               [Input("dropdown", "value"),
+               Input("tabs","active_tab"),
                Input("date_start","value"),
                Input("date_end","value"),
                ]
               )
-def trends(dropdown,date_start,date_end):
+def trends(dropdown,tabs,date_start,date_end):
     date_start2 = "2009-01-01"
     print("1")
     #try:
@@ -167,8 +190,17 @@ def trends(dropdown,date_start,date_end):
     nonfarm, nonfarm_10 = smooth_data("PAYEMS", date_start, date_start2, date_end)
     print("5")
     real_pers, real_pers_10 = smooth_data("W875RX1", date_start, date_start2, date_end)
+
+    retail_sales,retail_sales_10 = smooth_data("MRTSSM44X72USS", date_start, date_start2, date_end)
+
+    employment_level, employment_level_10 = smooth_data("CE16OV", date_start, date_start2, date_end)
     print("6")
     # pcec96 =
+
+    retail_sales_title = fred.get_series_info("MRTSSM44X72USS").title
+
+    employment_level_title = fred.get_series_info("CE16OV").title
+
     pce_title = fred.get_series_info("PCEC96").title
     print("7")
     indpro_title = fred.get_series_info("INDPRO").title
@@ -177,56 +209,89 @@ def trends(dropdown,date_start,date_end):
     print("9")
     real_personal_income_title = fred.get_series_info("W875RX1").title
     print("3")
-    if dropdown == "cyclical_trends":
-        print(dropdown)
-        fig_cyclical_trends = make_subplots(rows=2, cols=2,subplot_titles=[pce_title,indpro_title
-                                                                           ,nonfarm_title,real_personal_income_title])
+
+    print(dropdown)
+    fig_cyclical_trends = make_subplots(rows=3, cols=2,subplot_titles=[pce_title,indpro_title
+                                                                       ,nonfarm_title,real_personal_income_title,retail_sales_title,employment_level_title])
 
 
-        fig_cyclical_trends.add_trace(go.Scatter(x=pcec96.index.to_list(), y=pcec96._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='black')),row=1, col=1)
-        fig_cyclical_trends.add_trace(go.Scatter(x=(pcec96_10.index.to_list())[len(pcec96_10) - 19:],
-                                                 y=(pcec96_10['10 yr average'][len(pcec96_10) - 19:])/100,mode="lines",line=dict(width=2, color='green'),
-                                                 name="10yr average"),row=1, col=1)
+    fig_cyclical_trends.add_trace(go.Scatter(x=pcec96.index.to_list(), y=pcec96._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='white')),row=1, col=1)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(pcec96_10.index.to_list())[len(pcec96_10) - 19:],
+                                             y=(pcec96_10['10 yr average'][len(pcec96_10) - 19:])/100,mode="lines",line=dict(width=2, color='green'),
+                                             name="10yr average"),row=1, col=1)
 
-        fig_cyclical_trends.add_trace(go.Scatter(x=indpro.index.to_list(), y=indpro._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='black'),showlegend=False), row=1,col=2)
-        fig_cyclical_trends.add_trace(go.Scatter(x=(indpro_10.index.to_list())[len(indpro_10) - 19:],
-                                                 y=indpro_10['10 yr average'][len(indpro_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
-                                                 name="10yr average",showlegend=False), row=1, col=2)
+    fig_cyclical_trends.add_trace(go.Scatter(x=indpro.index.to_list(), y=indpro._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='white'),showlegend=False), row=1,col=2)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(indpro_10.index.to_list())[len(indpro_10) - 19:],
+                                             y=indpro_10['10 yr average'][len(indpro_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
+                                             name="10yr average",showlegend=False), row=1, col=2)
 
-        fig_cyclical_trends.add_trace(go.Scatter(x=nonfarm.index.to_list(), y=nonfarm._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='black'),showlegend=False), row=2,col=1)
-        fig_cyclical_trends.add_trace(go.Scatter(x=(nonfarm_10.index.to_list())[len(nonfarm_10) - 19:],
-                                                 y=nonfarm_10['10 yr average'][len(nonfarm_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
-                                                 name="10yr average",showlegend=False), row=2, col=1)
+    fig_cyclical_trends.add_trace(go.Scatter(x=nonfarm.index.to_list(), y=nonfarm._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='white'),showlegend=False), row=2,col=1)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(nonfarm_10.index.to_list())[len(nonfarm_10) - 19:],
+                                             y=nonfarm_10['10 yr average'][len(nonfarm_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
+                                             name="10yr average",showlegend=False), row=2, col=1)
 
-        fig_cyclical_trends.add_trace(go.Scatter(x=real_pers.index.to_list(), y=real_pers._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='black'),showlegend=False), row=2,col=2)
-        fig_cyclical_trends.add_trace(go.Scatter(x=(real_pers_10.index.to_list())[len(real_pers_10) - 19:],
-                                                 y=real_pers_10['10 yr average'][len(real_pers_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
-                                                 name="10yr average",showlegend=False), row=2, col=2)
+    fig_cyclical_trends.add_trace(go.Scatter(x=real_pers.index.to_list(), y=real_pers._6m_smoothing_growth/100, name="6m growth average",mode="lines",line=dict(width=2, color='white'),showlegend=False), row=2,col=2)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(real_pers_10.index.to_list())[len(real_pers_10) - 19:],
+                                             y=real_pers_10['10 yr average'][len(real_pers_10) - 19:]/100,line=dict(width=2, color='green'),mode="lines",
+                                             name="10yr average",showlegend=False), row=2, col=2)
 
-        fig_cyclical_trends.update_layout(template="plotly_white",
-                                          height=700,width=1500)
-        fig_cyclical_trends.update_layout(  # customize font and legend orientation & position
-            yaxis=dict(tickformat=".0%"),
-            title_font_family="Arial Black",
-            font=dict(
-                family="Rockwell",
-                size=18)
-        )
-        return dcc.Graph(figure=fig_cyclical_trends)
-    elif dropdown == "secular_trends":
-        print(dropdown)
-        fig_secular_trends = make_subplots(rows=2, cols=2)
-        fig_secular_trends.add_trace(go.Scatter(),row=1,col=1)
-        fig_secular_trends.add_trace(go.Scatter(),row=1,col=2)
-        fig_secular_trends.add_trace(go.Scatter(),row=2,col=1)
-        fig_secular_trends.add_trace(go.Scatter(),row=2,col=2)
-        return dcc.Graph(figure=fig_secular_trends)
-    else:
-        print("else")
+    fig_cyclical_trends.add_trace(
+        go.Scatter(x=retail_sales.index.to_list(), y=retail_sales._6m_smoothing_growth / 100, name="6m growth average",
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=1)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(retail_sales_10.index.to_list())[len(retail_sales_10) - 19:],
+                                             y=retail_sales_10['10 yr average'][len(retail_sales_10) - 19:] / 100,
+                                             line=dict(width=2, color='green'), mode="lines",
+                                             name="10yr average", showlegend=False), row=3, col=1)
+
+    fig_cyclical_trends.add_trace(
+        go.Scatter(x=employment_level.index.to_list(), y=employment_level._6m_smoothing_growth / 100, name="6m growth average",
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=2)
+    fig_cyclical_trends.add_trace(go.Scatter(x=(employment_level_10.index.to_list())[len(employment_level_10) - 19:],
+                                             y=employment_level_10['10 yr average'][len(employment_level_10) - 19:] / 100,
+                                             line=dict(width=2, color='green'), mode="lines",
+                                             name="10yr average", showlegend=False), row=3, col=2)
+
+    fig_cyclical_trends.update_layout(template="plotly_dark",
+                                      height=1000,width=1500)
+    fig_cyclical_trends.update_layout(  # customize font and legend orientation & position
+        yaxis=dict(tickformat=".0%"),
+        title_font_family="Arial Black",
+        font=dict(
+            family="Rockwell",
+            size=18)
+    )
+
+    fig_secular_trends = make_subplots(rows=2, cols=2)
+    fig_secular_trends.add_trace(go.Scatter(), row=1, col=1)
+    fig_secular_trends.add_trace(go.Scatter(), row=1, col=2)
+    fig_secular_trends.add_trace(go.Scatter(), row=2, col=1)
+    fig_secular_trends.add_trace(go.Scatter(), row=2, col=2)
+
+
+    if tabs == "Macroeconomic Indicators":
+        if dropdown == "cyclical_trends":
+            return dcc.Graph(figure=fig_cyclical_trends)
+        elif dropdown == "secular_trends":
+
+            return dcc.Graph(figure=fig_secular_trends)
+
+
+    elif tabs == "Directional Indicators":
+
+        pass
+
+    elif tabs == "Trend-Momentum Indicators":
+
+        pass
+
+    elif tabs == "Volatility Indicators":
+
         pass
 #   except ValueError:
         #pass
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    #host = socket.gethostbyname(socket.gethostname())
+    app.run_server(debug=True,  port=8080)
+
 
 
