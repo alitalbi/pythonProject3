@@ -436,8 +436,15 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
     merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
     merged_ = pd.concat([merged_data_spread_var,merged_data_5y_var,merged_data_cooper_ret],axis=1)
-    merged_['dummy_cooper'] = np.where(merged['cooper'])
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=5)
+    merged_['dummy_cooper'] = np.where(merged_['cooper'])
+    merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
+    merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
+    merged_data_cooper_ret = (
+        pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
+    merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
+    merged_.dropna(inplace=True)
+    merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, -1, 1)
+
 
     fig_.update_layout(
         template="plotly_dark",
