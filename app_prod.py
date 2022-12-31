@@ -54,7 +54,7 @@ frequency_ = 'monthly'
 
 external_stylesheets = [
     {
-        "href": "https://fonts.googleapis.com/css2?"
+        "href": "https://codepen.io/chriddyp/pen/bWLwgP.css"
                 "family=Lato:wght@400;700&display=swap",
         "rel": "stylesheet",
     },]
@@ -65,7 +65,7 @@ app.config.suppress_callback_exceptions = True
 
 timeout = 20
 
-app.layout = html.Div(style = {'backgroundColor':"rgb(255, 255, 255)"},children = [
+app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
    # dcc.Interval(id="interval_comp",interval=15*1000),
     dbc.Tabs(
                 [
@@ -79,7 +79,7 @@ app.layout = html.Div(style = {'backgroundColor':"rgb(255, 255, 255)"},children 
                 active_tab="Macroeconomic Indicators",
             ),
 
-    html.H1("Secular & Cyclical Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
+    html.H1("Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
     html.Br(),
     html.Div([
             dcc.Input(date_start_,placeholder="start date",id="date_start"),
@@ -201,15 +201,23 @@ def trends(dropdown,tabs,date_start,date_end):
 
     employment_level, employment_level_10 = smooth_data("CE16OV", date_start, date_start2, date_end)
 
+    shelter_prices,shelter_prices_10 = smooth_data("CUSR0000SAH1", date_start, date_start2, date_end)
+    shelter_prices = shelter_prices[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
+    shelter_prices_10 = shelter_prices_10[['10 yr average']] - cpi_10[['10 yr average']]
+
+
+    wages, wages_10 = smooth_data("CES0500000003", date_start, date_start2, date_end)
+    wages = wages[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
+    wages_10 = wages_10[['10 yr average']] - cpi_10[['10 yr average']]
 
 
     core_cpi, core_cpi_10 = smooth_data("CPILFESL", date_start, date_start2, date_end)
     core_pce, core_pce_10 = smooth_data("DPCCRC1M027SBEA", date_start, date_start2, date_end)
 
-    composite_inflation = pd.concat([core_cpi[['_6m_smoothing_growth']],core_pce[['_6m_smoothing_growth']],cpi[['_6m_smoothing_growth']],pcec96[['_6m_smoothing_growth']]],axis=1)
+    composite_inflation = pd.concat([shelter_prices[['_6m_smoothing_growth']],wages[['_6m_smoothing_growth']],core_cpi[['_6m_smoothing_growth']],core_pce[['_6m_smoothing_growth']],cpi[['_6m_smoothing_growth']],pcec96[['_6m_smoothing_growth']]],axis=1)
     composite_inflation.dropna(inplace=True)
     composite_inflation = composite_inflation.sum(axis=1)
-    composite_inflation_10 = pd.concat([pcec96_10[['10 yr average']],core_cpi_10[['10 yr average']],core_pce_10[['10 yr average']],cpi_10[['10 yr average']]],axis=1)
+    composite_inflation_10 = pd.concat([shelter_prices_10[['10 yr average']],wages_10[['10 yr average']],pcec96_10[['10 yr average']],core_cpi_10[['10 yr average']],core_pce_10[['10 yr average']],cpi_10[['10 yr average']]],axis=1)
     composite_inflation_10.dropna(inplace=True)
     composite_inflation_10 = composite_inflation_10.sum(axis=1)
 
@@ -241,6 +249,9 @@ def trends(dropdown,tabs,date_start,date_end):
     cpi_title = fred.get_series_info("W875RX1").title
     core_cpi_title = fred.get_series_info("CPILFESL").title
     core_pce_title = fred.get_series_info("DPCCRC1M027SBEA").title
+
+    shelter_title = fred.get_series_info("CUSR0000SAH1").title
+    wages_title = fred.get_series_info("CES0500000003").title
     print(dropdown)
 
     fig_cyclical_trends = make_subplots(rows=3, cols=2,subplot_titles=[pce_title,indpro_title
@@ -293,7 +304,7 @@ def trends(dropdown,tabs,date_start,date_end):
             size=18)
     )
     fig_secular_trends = make_subplots(rows=3, cols=2, subplot_titles=[cpi_title, core_cpi_title
-        , pce_title, core_pce_title])
+        , pce_title, core_pce_title,shelter_title,wages_title])
 
     fig_secular_trends.add_trace(
         go.Scatter(x=cpi.index.to_list(), y=cpi._6m_smoothing_growth / 100, name="6m growth average",
@@ -326,6 +337,20 @@ def trends(dropdown,tabs,date_start,date_end):
                                              y=core_pce_10['10 yr average'][len(core_pce_10) - 19:] / 100,
                                              line=dict(width=2, color='green'), mode="lines",
                                              name="10yr average", showlegend=False), row=2, col=2)
+    fig_secular_trends.add_trace(
+        go.Scatter(x=shelter_prices.index.to_list(), y=shelter_prices._6m_smoothing_growth / 100, name="6m growth average",
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=1)
+    fig_secular_trends.add_trace(go.Scatter(x=(shelter_prices_10.index.to_list())[len(shelter_prices_10) - 19:],
+                                            y=shelter_prices_10['10 yr average'][len(shelter_prices_10) - 19:] / 100,
+                                            line=dict(width=2, color='green'), mode="lines",
+                                            name="10yr average", showlegend=False), row=3, col=1)
+    fig_secular_trends.add_trace(
+        go.Scatter(x=wages.index.to_list(), y=wages._6m_smoothing_growth / 100, name="6m growth average",
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=2)
+    fig_secular_trends.add_trace(go.Scatter(x=(wages_10.index.to_list())[len(wages_10) - 19:],
+                                            y=wages_10['10 yr average'][len(wages_10) - 19:] / 100,
+                                            line=dict(width=2, color='green'), mode="lines",
+                                            name="10yr average", showlegend=False), row=3, col=2)
 
     fig_secular_trends.update_layout(template="plotly_dark",
                                       height=1000, width=1500)
