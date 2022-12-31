@@ -1,0 +1,15 @@
+openpyxl
+wget
+pandas
+numpy
+plotly
+plotly.graph_objects
+plotly.express
+dash_table
+dash
+matplotlib
+socket
+os
+datetime
+dash_bootstrap_components
+fredapi
