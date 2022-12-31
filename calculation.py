@@ -1,8 +1,9 @@
 from fredapi import Fred
 import pandas as pd
 import matplotlib.pyplot as plt
-
-
+import wget
+import os
+#need openpyxl
 
 # Parameters for the request from the FRED Website
 
@@ -17,10 +18,10 @@ def smoothed_2(ticker, date_start, date_end, frequency):
 
     # get data as an array and transforming it into a dataframe
     data_ = pd.DataFrame(
-        fred.get_series(ticker, observation_start=date_start, observation_end=date_end, freq=frequency))
+        fred.get_series("CPIAUCSL", observation_start=date_start, observation_end=date_end, freq=frequency))
     date_start2 = "2009-01-01"
     data_2 = pd.DataFrame(
-        fred.get_series(ticker, observation_start=date_start2, observation_end=date_end, freq=frequency))
+        fred.get_series("CPIAUCSL", observation_start=date_start2, observation_end=date_end, freq=frequency))
     print(data_2)
     # creating 6m smoothing growth column
     data_['_6m_smoothing_growth'] = 100 * ((data_.iloc[:, 0][11:] / data_.iloc[:, 0].rolling(12).mean() - 1) * 2)[
@@ -76,7 +77,13 @@ def fred_data(ticker):
 
 if __name__=="__main__":
     data_fred = fred_data("INDPRO")
-    fig_ = smoothed_2("INDPRO",date_start,date_end,frequency)
+    cwd = os.getcwd()
+    wget.download("http://atlantafed.org/-/media/documents/datafiles/chcs/wage-growth-tracker/wage-growth-data.xlsx")
+    data_ = (pd.read_excel(cwd+"/wage-growth-data.xlsx")).iloc[:,11]
+    data_['_6m_smoothing_growth'] = 100 * ((data_.iloc[3:, 0][11:] / data_.iloc[3:, 0].rolling(12).mean() - 1) * 2)[
+                                          len(data_) - 19:]
+    print(data_)
+    #fig_ = smoothed_2("INDPRO",date_start,date_end,frequency)
 
-
+#acheter des bonds et augmenter les taux ? problème de liquidité sur la dette marocaine
     print(data_fred)

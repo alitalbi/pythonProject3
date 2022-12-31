@@ -12,7 +12,7 @@ import socket
 import os
 import datetime
 import numpy as np
-
+import sklearn
 from sklearn.model_selection import train_test_split
 
 
@@ -435,7 +435,9 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
     merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
-
+    merged_ = pd.concat([merged_data_spread_var,merged_data_5y_var,merged_data_cooper_ret],axis=1)
+    merged_['dummy_cooper'] = np.where(merged['cooper'])
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=5)
 
     fig_.update_layout(
         template="plotly_dark",
