@@ -422,7 +422,7 @@ def trends(dropdown,tabs,date_start,date_end):
 
 
 
-    fig_brainard = make_subplots(specs=[[{"secondary_y": True}]])
+    fig_brainard = make_subplots(cols=1,rows=2,specs=[[{"secondary_y": True}],[{"secondary_y": True}]],subplot_titles=["Levels","Returns"])
 
     fig_brainard.add_trace(
         go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,0] , name="Spread",
@@ -436,15 +436,24 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
     merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
     merged_ = pd.concat([merged_data_spread_var,merged_data_5y_var,merged_data_cooper_ret],axis=1)
-    merged_['dummy_cooper'] = np.where(merged_['cooper'])
+ #   merged_['dummy_cooper'] = np.where(merged_['cooper'])
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
     merged_data_cooper_ret = (
-        pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
+        pd.DataFrame(merged_data.iloc[:, 2].resample("1M").agg(lambda x: x[-1]))).pct_change()
     merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
     merged_.dropna(inplace=True)
-    merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, -1, 1)
-
+    merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
+    fig_brainard.add_trace(
+        go.Scatter(x=merged_.index.to_list(), y=merged_["spread 30_5yr"], name="Spread 30-5y",
+                   mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=2)
+    fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["5y"], name="US 5y",
+                                      mode="lines", line=dict(width=2, color='purple'),showlegend=False), secondary_y=False, col=1,
+                           row=2)
+    fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["cooper"], name="Cooper prices",
+                                      mode="lines", line=dict(width=2, color='orange'),showlegend=False), secondary_y=True, col=1, row=2)
+    fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
+                                      mode="lines", line=dict(width=2, color='red'),showlegend=False), secondary_y=True, col=1, row=1)
 
     fig_.update_layout(
         template="plotly_dark",
@@ -471,7 +480,7 @@ def trends(dropdown,tabs,date_start,date_end):
         template="plotly_dark",
         title={
             'text': "BRAINARD",
-            'y': 0.9,
+            'y': 1,
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'})
@@ -483,10 +492,10 @@ def trends(dropdown,tabs,date_start,date_end):
             family="Rockwell",
             size=16),
         legend=dict(
-            title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
+            title=None, orientation="h", y=1, yanchor="bottom", x=0.5, xanchor="center"
         )
     )
-    fig_brainard.update_layout(height=950, width=1500)
+    fig_brainard.update_layout(height=1250, width=1500)
 
     fig_inflation.update_layout(
         template="plotly_dark",

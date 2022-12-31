@@ -32,7 +32,7 @@ def pct_changee(x):
         return (x[-1] - x[0]) / x[0]
 
 max=1000
-for period in range(1,13):
+for period in [3]:
     cooper_prices = pd.read_csv(PATH_DATA+"cooper_prices.csv").iloc[:,:2]
     cooper_prices.set_index("Date",inplace=True,drop=True)
     cooper_prices['Dernier'] = cooper_prices['Dernier'].apply(lambda x:float(x.replace(",",".")))
@@ -79,7 +79,7 @@ print('La performance du modèle sur la base de test')
 print('--------------------------------------')
 print('Lerreur quadratique moyenne est {}'.format(rmse))
 
-merged_data.plot()
+merged_.plot()
 
 print(merged_data.corr(method='spearman'))
 plt.show()
