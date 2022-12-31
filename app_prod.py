@@ -13,6 +13,9 @@ import os
 import datetime
 import numpy as np
 
+from sklearn.model_selection import train_test_split
+
+
 def smooth_data(ticker, date_start, date_start2, date_end):
     frequency = "monthly"
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
@@ -419,7 +422,7 @@ def trends(dropdown,tabs,date_start,date_end):
 
 
 
-    fig_brainard = make_subplots(rows=2,cols=1,specs=[[{"secondary_y": True}],[{"secondary_y": True}]],subplot_titles=["Levels","Returns"])
+    fig_brainard = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig_brainard.add_trace(
         go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,0] , name="Spread",
@@ -432,15 +435,7 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
     merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
-    fig_brainard.add_trace(
-        go.Scatter(x=merged_data_spread_var.index.to_list(), y=np.log(merged_data_spread_var.iloc[:, 0]), name="Spread",
-                   mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=2)
-    fig_brainard.add_trace(go.Scatter(x=merged_data_5y_var.index.to_list(), y=np.log(merged_data_5y_var.iloc[:, 0]), name="US 5y",
-                                      mode="lines", line=dict(width=2, color='purple')), secondary_y=False, col=1,
-                           row=2)
-    fig_brainard.add_trace(go.Scatter(x=merged_data_cooper_ret.index.to_list(), y=np.log(merged_data_cooper_ret.iloc[:, 0]), name="Cooper prices",
-                                      mode="lines", line=dict(width=2, color='purple')), secondary_y=True, col=1,
-                           row=2)
+
 
     fig_.update_layout(
         template="plotly_dark",
@@ -466,7 +461,7 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_brainard.update_layout(
         template="plotly_dark",
         title={
-            'text': "TEST BRAINARD",
+            'text': "BRAINARD",
             'y': 0.9,
             'x': 0.5,
             'xanchor': 'center',
