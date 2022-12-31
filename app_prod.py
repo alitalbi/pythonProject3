@@ -453,7 +453,7 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["cooper"], name="Cooper prices",
                                       mode="lines", line=dict(width=2, color='orange'),showlegend=False), secondary_y=True, col=1, row=2)
     fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
-                                      mode="lines", line=dict(width=2, color='red'),showlegend=False), secondary_y=True, col=1, row=1)
+                                      mode="lines", line=dict(width=2, color='red'),showlegend=True), secondary_y=True, col=1, row=1)
 
     fig_.update_layout(
         template="plotly_dark",
