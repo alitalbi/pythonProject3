@@ -11,7 +11,7 @@ import dash_bootstrap_components as dbc
 import socket
 import os
 import datetime
-
+import numpy as np
 
 def smooth_data(ticker, date_start, date_start2, date_end):
     frequency = "monthly"
@@ -90,6 +90,7 @@ app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
 
         html.Div(dcc.Dropdown( id = 'dropdown',
         options = [
+            {'label':'brainard_test', 'value':'brainard_test' },
             {'label':'Growth', 'value':'Growth' },
             {'label': 'Inflation Outlook', 'value':'Inflation Outlook'},
             ],
@@ -172,11 +173,45 @@ def smoothed_2(tabs,ticker, date_start, date_end):
                ]
               )
 def trends(dropdown,tabs,date_start,date_end):
+    fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     date_start2 = "2009-01-01"
     print("1")
     #try:
+    PATH_DATA = "/Users/talbi/Downloads/"
 
-    fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
+    _30y = pd.read_csv(PATH_DATA + "30y.csv").iloc[:, :2]
+    _30y.set_index("Date", inplace=True, drop=True)
+    _30y['Dernier'] = _30y['Dernier'].apply(lambda x: float(x.replace(",", ".")))
+    _30y_index = pd.Series(_30y.index.to_list()[::-1]).apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
+    _30y = _30y[::-1]
+    _30y.index = _30y_index
+
+    _5y_nominal = pd.read_csv(PATH_DATA + "30y.csv").iloc[:, :2]
+    _5y_nominal.set_index("Date", inplace=True, drop=True)
+    _5y_nominal['Dernier'] = _5y_nominal['Dernier'].apply(lambda x: float(x.replace(",", ".")))
+    _5y_nominal_index = pd.Series(_5y_nominal.index.to_list()[::-1]).apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
+    _5y_nominal = _5y_nominal[::-1]
+    _5y_nominal.index = _5y_nominal_index
+
+    _5y_nominal_var = _5y_nominal.diff()
+
+    _5y_real = pd.DataFrame(
+        fred.get_series("DFII5", observation_start="1970-01-01", observation_end="2022-12-30", freq="daily"))
+    _5y_real.columns = ['Dernier']
+
+    spread = _30y - _5y_real
+
+    cooper_prices = pd.read_csv(PATH_DATA + "cooper_prices.csv").iloc[:, :2]
+    cooper_prices.set_index("Date", inplace=True, drop=True)
+    cooper_prices['Dernier'] = cooper_prices['Dernier'].apply(lambda x: float(x.replace(",", ".")))
+    cooper_prices_index = pd.Series(cooper_prices.index.to_list()[::-1]).apply(
+        lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
+    cooper_prices = cooper_prices[::-1]*100
+    cooper_prices.index = cooper_prices_index
+    merged_data = pd.concat([spread, _5y_nominal, cooper_prices], axis=1)
+    merged_data.dropna(inplace=True)
+    merged_data.columns = ["spread 30_5yr", "5y", "cooper"]
+
     # Data importing
     print("2")
     cpi, cpi_10 = smooth_data("CPIAUCSL", date_start, date_start2, date_end)
@@ -381,6 +416,32 @@ def trends(dropdown,tabs,date_start,date_end):
                               y=composite_inflation_10[len(composite_inflation_10) - 19:] / 100, name="6m growth average",
                               mode="lines", line=dict(width=2, color='green')))
 
+
+
+
+    fig_brainard = make_subplots(rows=2,cols=1,specs=[[{"secondary_y": True}],[{"secondary_y": True}]],subplot_titles=["Levels","Returns"])
+
+    fig_brainard.add_trace(
+        go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,0] , name="Spread",
+                   mode="lines", line=dict(width=2, color='white')),secondary_y=False,col=1,row=1)
+    fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,1] , name="US 5y",
+                   mode="lines", line=dict(width=2, color='purple')),secondary_y=False,col=1,row=1)
+    fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,2], name="Cooper prices",
+                                      mode="lines", line=dict(width=2, color='orange')),secondary_y=True,col=1,row=1)
+
+    merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
+    merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
+    merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
+    fig_brainard.add_trace(
+        go.Scatter(x=merged_data_spread_var.index.to_list(), y=np.log(merged_data_spread_var.iloc[:, 0]), name="Spread",
+                   mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=2)
+    fig_brainard.add_trace(go.Scatter(x=merged_data_5y_var.index.to_list(), y=np.log(merged_data_5y_var.iloc[:, 0]), name="US 5y",
+                                      mode="lines", line=dict(width=2, color='purple')), secondary_y=False, col=1,
+                           row=2)
+    fig_brainard.add_trace(go.Scatter(x=merged_data_cooper_ret.index.to_list(), y=np.log(merged_data_cooper_ret.iloc[:, 0]), name="Cooper prices",
+                                      mode="lines", line=dict(width=2, color='purple')), secondary_y=True, col=1,
+                           row=2)
+
     fig_.update_layout(
         template="plotly_dark",
         title={
@@ -401,6 +462,28 @@ def trends(dropdown,tabs,date_start,date_end):
         )
     )
     fig_.update_layout(height=650, width=1500)
+
+    fig_brainard.update_layout(
+        template="plotly_dark",
+        title={
+            'text': "TEST BRAINARD",
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'})
+
+    fig_brainard.update_layout(  # customize font and legend orientation & position
+
+        title_font_family="Arial Black",
+        font=dict(
+            family="Rockwell",
+            size=16),
+        legend=dict(
+            title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
+        )
+    )
+    fig_brainard.update_layout(height=950, width=1500)
+
     fig_inflation.update_layout(
         template="plotly_dark",
         title={
@@ -427,7 +510,8 @@ def trends(dropdown,tabs,date_start,date_end):
         elif dropdown == "Inflation Outlook":
 
             return dcc.Graph(figure=fig_inflation),dcc.Graph(figure=fig_secular_trends)
-
+        elif dropdown == "brainard_test":
+            return dcc.Graph(figure=fig_brainard)
 
     elif tabs == "Directional Indicators":
 
