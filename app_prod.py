@@ -173,6 +173,7 @@ def smoothed_2(tabs,ticker, date_start, date_end):
                Input("tabs","active_tab"),
                Input("date_start","value"),
                Input("date_end","value"),
+
                ]
               )
 def trends(dropdown,tabs,date_start,date_end):
@@ -440,13 +441,13 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
     merged_data_cooper_ret = (
-        pd.DataFrame(merged_data.iloc[:, 2].resample("1M").agg(lambda x: x[-1]))).pct_change()
+        pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
     merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
     merged_.dropna(inplace=True)
     merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
     fig_brainard.add_trace(
         go.Scatter(x=merged_.index.to_list(), y=merged_["spread 30_5yr"], name="Spread 30-5y",
-                   mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=2)
+                   mode="lines", line=dict(width=2, color='white'),showlegend=False), secondary_y=False, col=1, row=2)
     fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["5y"], name="US 5y",
                                       mode="lines", line=dict(width=2, color='purple'),showlegend=False), secondary_y=False, col=1,
                            row=2)
