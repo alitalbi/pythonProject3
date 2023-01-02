@@ -221,30 +221,39 @@ def trends(dropdown,tabs,date_start,date_end):
     cpi, cpi_10 = smooth_data("CPIAUCSL", date_start, date_start2, date_end)
 
     pcec96, pcec96_10 = smooth_data("PCEC96", date_start, date_start2, date_end)
-    pcec96 = pcec96[["_6m_smoothing_growth"]]-cpi[["_6m_smoothing_growth"]]
-    pcec96_10 = pcec96_10[['10 yr average']]-cpi_10[['10 yr average']]
+    #pcec96 = pcec96[["_6m_smoothing_growth"]]-cpi[["_6m_smoothing_growth"]]
+    #pcec96_10 = pcec96_10[['10 yr average']]-cpi_10[['10 yr average']]
     print("3")
     indpro, indpro_10 = smooth_data("INDPRO", date_start, date_start2, date_end)
     print('4')
     nonfarm, nonfarm_10 = smooth_data("PAYEMS", date_start, date_start2, date_end)
     print("5")
     real_pers, real_pers_10 = smooth_data("W875RX1", date_start, date_start2, date_end)
-    real_pers = real_pers[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
-    real_pers_10 = real_pers_10[['10 yr average']] - cpi_10[['10 yr average']]
+    #real_pers = real_pers[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
+    #real_pers_10 = real_pers_10[['10 yr average']] - cpi_10[['10 yr average']]
 
 
-    retail_sales,retail_sales_10 = smooth_data("MRTSSM44X72USS", date_start, date_start2, date_end)
-    retail_sales = retail_sales[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
-    retail_sales_10 = retail_sales_10[['10 yr average']] - cpi_10[['10 yr average']]
+    retail_sales,retail_sales_10 = smooth_data("RRSFS", date_start, date_start2, date_end)
+    #retail_sales = retail_sales[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
+    #retail_sales_10 = retail_sales_10[['10 yr average']] - cpi_10[['10 yr average']]
 
 
     employment_level, employment_level_10 = smooth_data("CE16OV", date_start, date_start2, date_end)
-
+    employment_level.dropna(inplace=True)
     shelter_prices,shelter_prices_10 = smooth_data("CUSR0000SAH1", date_start, date_start2, date_end)
     shelter_prices = shelter_prices[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
     shelter_prices_10 = shelter_prices_10[['10 yr average']] - cpi_10[['10 yr average']]
 
+    cwd = os.getcwd()
+    # wget.download("http://atlantafed.org/-/media/documents/datafiles/chcs/wage-growth-tracker/wage-growth-data.xlsx")
+    wage_tracker = pd.DataFrame(pd.read_excel(cwd + "/wage-growth-data.xlsx").iloc[3:, [0, 11]])
+    wage_tracker.columns = ['date', "wage_tracker"]
+    wage_tracker.set_index('date', inplace=True)
 
+
+
+    employment_level_wage_tracker = pd.concat([employment_level, wage_tracker], axis=1)
+    employment_level_wage_tracker.dropna(inplace=True)
     wages, wages_10 = smooth_data("CES0500000003", date_start, date_start2, date_end)
     wages = wages[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
     wages_10 = wages_10[['10 yr average']] - cpi_10[['10 yr average']]
@@ -252,13 +261,6 @@ def trends(dropdown,tabs,date_start,date_end):
 
     core_cpi, core_cpi_10 = smooth_data("CPILFESL", date_start, date_start2, date_end)
     core_pce, core_pce_10 = smooth_data("DPCCRC1M027SBEA", date_start, date_start2, date_end)
-
-    composite_inflation = pd.concat([shelter_prices[['_6m_smoothing_growth']],wages[['_6m_smoothing_growth']],core_cpi[['_6m_smoothing_growth']],core_pce[['_6m_smoothing_growth']],cpi[['_6m_smoothing_growth']],pcec96[['_6m_smoothing_growth']]],axis=1)
-    composite_inflation.dropna(inplace=True)
-    composite_inflation = composite_inflation.sum(axis=1)
-    composite_inflation_10 = pd.concat([shelter_prices_10[['10 yr average']],wages_10[['10 yr average']],pcec96_10[['10 yr average']],core_cpi_10[['10 yr average']],core_pce_10[['10 yr average']],cpi_10[['10 yr average']]],axis=1)
-    composite_inflation_10.dropna(inplace=True)
-    composite_inflation_10 = composite_inflation_10.sum(axis=1)
 
 
 
@@ -285,13 +287,14 @@ def trends(dropdown,tabs,date_start,date_end):
     print("9")
     real_personal_income_title = fred.get_series_info("W875RX1").title
     print("3")
-    cpi_title = fred.get_series_info("W875RX1").title
+    cpi_title = fred.get_series_info("CPIAUCSL").title
     core_cpi_title = fred.get_series_info("CPILFESL").title
     core_pce_title = fred.get_series_info("DPCCRC1M027SBEA").title
 
     shelter_title = fred.get_series_info("CUSR0000SAH1").title
     wages_title = fred.get_series_info("CES0500000003").title
     print(dropdown)
+
 
     fig_cyclical_trends = make_subplots(rows=3, cols=2,subplot_titles=[pce_title,indpro_title
                                                                        ,nonfarm_title,real_personal_income_title,retail_sales_title,employment_level_title])
@@ -342,32 +345,40 @@ def trends(dropdown,tabs,date_start,date_end):
             family="Rockwell",
             size=18)
     )
-    fig_secular_trends = make_subplots(rows=3, cols=2, subplot_titles=[cpi_title, core_cpi_title
-        , pce_title, core_pce_title,shelter_title,wages_title])
+    fig_cyclical_trends.layout.yaxis2.tickformat =".1%"
+    fig_cyclical_trends.layout.yaxis3.tickformat = ".1%"
+    fig_cyclical_trends.layout.yaxis4.tickformat = ".1%"
+    fig_cyclical_trends.layout.yaxis5.tickformat = ".1%"
+    fig_cyclical_trends.layout.yaxis6.tickformat = ".1%"
+
+
+
+    fig_secular_trends = make_subplots(rows=3, cols=2, specs=[[{"secondary_y": True},{"secondary_y": True}],[{"secondary_y": True},{"secondary_y": True}],[{"secondary_y": True},{"secondary_y": True}]],subplot_titles=[cpi_title, core_cpi_title
+        , pce_title, core_pce_title,shelter_title,"Employment (Growth) and Wage tracker levels"])
 
     fig_secular_trends.add_trace(
         go.Scatter(x=cpi.index.to_list(), y=cpi._6m_smoothing_growth / 100, name="6m growth average",
-                   mode="lines", line=dict(width=2, color='white')), row=1, col=1)
+                   mode="lines", line=dict(width=2, color='white')),secondary_y=False, row=1, col=1)
     fig_secular_trends.add_trace(go.Scatter(x=(cpi_10.index.to_list())[len(cpi_10) - 19:],
                                              y=(cpi_10['10 yr average'][len(cpi_10) - 19:]) / 100, mode="lines",
                                              line=dict(width=2, color='green'),
-                                             name="10yr average"), row=1, col=1)
+                                             name="10yr average"),secondary_y=False, row=1, col=1)
 
     fig_secular_trends.add_trace(
         go.Scatter(x=core_cpi.index.to_list(), y=core_cpi._6m_smoothing_growth / 100, name="6m growth average",
-                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=1, col=2)
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False),secondary_y=False, row=1, col=2)
     fig_secular_trends.add_trace(go.Scatter(x=(core_cpi_10.index.to_list())[len(core_cpi_10) - 19:],
                                              y=core_cpi_10['10 yr average'][len(core_cpi_10) - 19:] / 100,
                                              line=dict(width=2, color='green'), mode="lines",
-                                             name="10yr average", showlegend=False), row=1, col=2)
+                                             name="10yr average", showlegend=False),secondary_y=False, row=1, col=2)
 
     fig_secular_trends.add_trace(
         go.Scatter(x=pcec96.index.to_list(), y=pcec96._6m_smoothing_growth / 100, name="6m growth average",
-                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=2, col=1)
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False),secondary_y=False, row=2, col=1)
     fig_secular_trends.add_trace(go.Scatter(x=(pcec96_10.index.to_list())[len(pcec96_10) - 19:],
                                              y=pcec96_10['10 yr average'][len(pcec96_10) - 19:] / 100,
                                              line=dict(width=2, color='green'), mode="lines",
-                                             name="10yr average", showlegend=False), row=2, col=1)
+                                             name="10yr average", showlegend=False),secondary_y=False, row=2, col=1)
 
     fig_secular_trends.add_trace(
         go.Scatter(x=core_pce.index.to_list(), y=core_pce._6m_smoothing_growth / 100, name="6m growth average",
@@ -375,30 +386,36 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_secular_trends.add_trace(go.Scatter(x=(core_pce_10.index.to_list())[len(core_pce_10) - 19:],
                                              y=core_pce_10['10 yr average'][len(core_pce_10) - 19:] / 100,
                                              line=dict(width=2, color='green'), mode="lines",
-                                             name="10yr average", showlegend=False), row=2, col=2)
+                                             name="10yr average", showlegend=False),secondary_y=False, row=2, col=2)
     fig_secular_trends.add_trace(
         go.Scatter(x=shelter_prices.index.to_list(), y=shelter_prices._6m_smoothing_growth / 100, name="6m growth average",
-                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=1)
+                   mode="lines", line=dict(width=2, color='white'), showlegend=False),secondary_y=False, row=3, col=1)
     fig_secular_trends.add_trace(go.Scatter(x=(shelter_prices_10.index.to_list())[len(shelter_prices_10) - 19:],
                                             y=shelter_prices_10['10 yr average'][len(shelter_prices_10) - 19:] / 100,
                                             line=dict(width=2, color='green'), mode="lines",
-                                            name="10yr average", showlegend=False), row=3, col=1)
-    fig_secular_trends.add_trace(
-        go.Scatter(x=wages.index.to_list(), y=wages._6m_smoothing_growth / 100, name="6m growth average",
-                   mode="lines", line=dict(width=2, color='white'), showlegend=False), row=3, col=2)
-    fig_secular_trends.add_trace(go.Scatter(x=(wages_10.index.to_list())[len(wages_10) - 19:],
-                                            y=wages_10['10 yr average'][len(wages_10) - 19:] / 100,
-                                            line=dict(width=2, color='green'), mode="lines",
-                                            name="10yr average", showlegend=False), row=3, col=2)
+                                            name="10yr average", showlegend=False),secondary_y=False, row=3, col=1)
 
+
+    fig_secular_trends.add_trace(
+        go.Scatter(x=employment_level_wage_tracker.index.to_list(), y=employment_level_wage_tracker._6m_smoothing_growth, name="Employment level 6m annualized growth",
+                   mode="lines", line=dict(width=2, color='white'), showlegend=True),secondary_y=False, row=3, col=2)
+    fig_secular_trends.add_trace( go.Scatter(x=employment_level_wage_tracker.index.to_list(), y=employment_level_wage_tracker.wage_tracker, name="Atlanta Fed wage tracker",
+                   mode="lines", line=dict(width=2, color='blue'), showlegend=True),secondary_y=True, row=3, col=2)
     fig_secular_trends.update_layout(template="plotly_dark",
-                                      height=1000, width=1500)
+                                      height=1200, width=1500)
     fig_secular_trends.update_layout(  # customize font and legend orientation & position
-        yaxis=dict(tickformat=".0%"),
+        yaxis=dict(tickformat=".1%"),
         title_font_family="Arial Black",
         font=dict(
             family="Rockwell",
-            size=18))
+            size=18)
+        )
+
+    fig_secular_trends.layout.yaxis2.tickformat = ".1%"
+    fig_secular_trends.layout.yaxis3.tickformat = ".1%"
+    fig_secular_trends.layout.yaxis4.tickformat = ".1%"
+    fig_secular_trends.layout.yaxis5.tickformat = ".1%"
+
     fig_ = go.Figure()
 
     # drop the blank values
@@ -409,19 +426,20 @@ def trends(dropdown,tabs,date_start,date_end):
                               mode="lines", line=dict(width=2, color='white')))
     fig_.add_trace(go.Scatter(x=composite_growth_10.index.to_list()[len(composite_growth_10) - 19:], y=composite_growth_10[len(composite_growth_10) - 19:] / 100, name="6m growth average",
                               mode="lines", line=dict(width=2, color='green')))
-    fig_inflation = go.Figure()
-    # drop the blank values
 
-    # ploting the data
-    # composite_growth_10 = 100 * (composite_growth.iloc[:, 0].rolling(10).mean().pct_change())
-    fig_inflation.add_trace(go.Scatter(x=composite_inflation.index.to_list(), y=composite_inflation / 100, name="6m growth average",
-                              mode="lines", line=dict(width=2, color='white')))
-    fig_inflation.add_trace(go.Scatter(x=composite_inflation_10.index.to_list()[len(composite_inflation_10) - 19:],
-                              y=composite_inflation_10[len(composite_inflation_10) - 19:] / 100, name="6m growth average",
-                              mode="lines", line=dict(width=2, color='green')))
+    for x, y in zip(composite_growth.index[len(composite_growth) - 19:len(composite_growth):3],
+                    composite_growth[len(composite_growth) - 19:len(composite_growth):3]/ 100):
+        label = "{:.1f}".format(y*100) + " %"
+        fig_.add_annotation(x=x, y=y,
+                           text=label,
+                           showarrow=False, yshift=10)
 
-
-
+    for x, y in zip(composite_growth_10.index[len(composite_growth_10) - 19:len(composite_growth_10):3],
+                    composite_growth_10[len(composite_growth_10) - 19:len(composite_growth_10):3]/ 100):
+        label = "{:.1f}".format(y*100) + " %"
+        fig_.add_annotation(x=x, y=y,
+                           text=label,
+                           showarrow=False, yshift=10)
 
     fig_brainard = make_subplots(cols=1,rows=2,specs=[[{"secondary_y": True}],[{"secondary_y": True}]],subplot_titles=["Levels","Returns"])
 
@@ -498,32 +516,13 @@ def trends(dropdown,tabs,date_start,date_end):
     )
     fig_brainard.update_layout(height=1250, width=1500)
 
-    fig_inflation.update_layout(
-        template="plotly_dark",
-        title={
-            'text': "COMPOSITE INFLATION ",
-            'y': 0.9,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'})
 
-    fig_inflation.update_layout(  # customize font and legend orientation & position
-        yaxis=dict(tickformat=".0%"),
-        title_font_family="Arial Black",
-        font=dict(
-            family="Rockwell",
-            size=16),
-        legend=dict(
-            title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
-        )
-    )
-    fig_inflation.update_layout(height=650, width=1500)
     if tabs == "Macroeconomic Indicators":
         if dropdown == "Growth":
             return dcc.Graph(figure=fig_),dcc.Graph(figure=fig_cyclical_trends)
         elif dropdown == "Inflation Outlook":
 
-            return dcc.Graph(figure=fig_inflation),dcc.Graph(figure=fig_secular_trends)
+            return dcc.Graph(figure=fig_secular_trends)
         elif dropdown == "brainard_test":
             return dcc.Graph(figure=fig_brainard)
 
@@ -541,8 +540,8 @@ def trends(dropdown,tabs,date_start,date_end):
 #   except ValueError:
         #pass
 if __name__ == "__main__":
-    #host = socket.gethostbyname(socket.gethostname())
-    app.run_server(debug=True,  port=8080)
+    # host = socket.gethostbyname(socket.gethostname())
+    app.run_server(debug=True, port=8080)
 
 
 
