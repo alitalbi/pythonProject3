@@ -36,7 +36,17 @@ def smooth_data(ticker, date_start, date_start2, date_end):
     data_2['10 yr average'] = 100 * (data_2.iloc[:, 0].rolling(10).mean().pct_change())
     data_.dropna(inplace=True)
     data_2.dropna(inplace=True)
-    return data_, data_2
+    return data_[['_6m_smoothing_growth']], data_2[['10 yr average']]
+
+def score_table(index,data_,data_10):
+    score_table = pd.DataFrame.from_dict({"trend vs history ": 1 if data_.iloc[-1, 0] > data_10.iloc[-1, 0] else 0,
+                                          "growth": 1 if data_.iloc[-1, 0] > 0 else 0,
+                                          "Direction of Trend": 1 if (data_.resample("3M").last().diff())[-2:].sum()[
+                                                                         0] > 1 else 0}, orient="index").T
+    score_table['Score'] = score_table.sum(axis=1)
+    score_table['Indicators']= index
+
+    return score_table
 def fred_data(ticker):
     date_start = "2017-01-01"
     date_end = "2022-05-27"
@@ -244,6 +254,9 @@ def trends(dropdown,tabs,date_start,date_end):
     shelter_prices = shelter_prices[["_6m_smoothing_growth"]] - cpi[["_6m_smoothing_growth"]]
     shelter_prices_10 = shelter_prices_10[['10 yr average']] - cpi_10[['10 yr average']]
 
+
+
+
     cwd = os.getcwd()
     # wget.download("http://atlantafed.org/-/media/documents/datafiles/chcs/wage-growth-tracker/wage-growth-data.xlsx")
     wage_tracker = pd.DataFrame(pd.read_excel(cwd + "/wage-growth-data.xlsx").iloc[3:, [0, 11]])
@@ -267,10 +280,12 @@ def trends(dropdown,tabs,date_start,date_end):
 
     composite_data = pd.concat([pcec96[['_6m_smoothing_growth']],indpro[['_6m_smoothing_growth']],nonfarm[['_6m_smoothing_growth']],real_pers[['_6m_smoothing_growth']],retail_sales[['_6m_smoothing_growth']],employment_level[['_6m_smoothing_growth']]],axis=1)
     composite_data.dropna(inplace=True)
-    composite_growth = composite_data.sum(axis=1)
+    composite_growth = pd.DataFrame(composite_data.sum(axis=1))
+    composite_growth.columns = ["_6m_smoothing_growth"]
     composite_growth_10 = pd.concat([pcec96_10[['10 yr average']],indpro_10[['10 yr average']],nonfarm_10[['10 yr average']],real_pers_10[['10 yr average']],retail_sales_10[['10 yr average']],employment_level_10[['10 yr average']]],axis=1)
     composite_growth_10.dropna(inplace=True)
-    composite_growth_10 = composite_growth_10.sum(axis=1)
+    composite_growth_10 = pd.DataFrame(composite_growth_10.sum(axis=1))
+    composite_growth_10.columns=["10 yr average"]
 
     print("6")
     # pcec96 =
@@ -293,6 +308,23 @@ def trends(dropdown,tabs,date_start,date_end):
 
     shelter_title = fred.get_series_info("CUSR0000SAH1").title
     wages_title = fred.get_series_info("CES0500000003").title
+
+    score_table_merged = pd.concat([score_table(pce_title, pcec96, pcec96_10), score_table(indpro_title,indpro, indpro_10),
+                                    score_table(nonfarm_title,nonfarm, nonfarm_10),
+                                    score_table(real_personal_income_title,real_pers,real_pers_10),
+                                    score_table(retail_sales_title,retail_sales,retail_sales_10),
+                                    score_table(employment_level_title,employment_level,employment_level_10),
+                                    score_table("COMPOSITE GROWTH",composite_growth,composite_growth_10)], axis = 0)
+
+    score_table_merged_infla = pd.concat([score_table(cpi_title, cpi, cpi_10), score_table(indpro_title,indpro, indpro_10),
+                                    score_table(core_cpi_title,core_cpi, core_cpi_10),
+                                    score_table(pce_title,pcec96,pcec96_10),
+                                    score_table(core_pce_title, core_pce, core_pce_10),
+                                    score_table(shelter_title,shelter_prices,shelter_prices_10)], axis = 0)
+    score_table_merged = score_table_merged.iloc[:,[4,0,1,2,3]]
+    score_table_merged_infla = score_table_merged_infla.iloc[:, [4, 0, 1, 2, 3]]
+    #score_table_merged.set_index("index", inplace=True)
+
     print(dropdown)
 
 
@@ -519,10 +551,84 @@ def trends(dropdown,tabs,date_start,date_end):
 
     if tabs == "Macroeconomic Indicators":
         if dropdown == "Growth":
-            return dcc.Graph(figure=fig_),dcc.Graph(figure=fig_cyclical_trends)
+            return html.Div(dash_table.DataTable(score_table_merged.to_dict('records'),
+                                     [{"name": i, "id": i} for i in score_table_merged.columns],
+                                     sort_action='native',
+
+                                     style_data_conditional=  [
+                                         {'if': {'column_id': 'Indicator'},
+                                          'width': '20px'},
+
+                                         {'if': {
+                                            'filter_query': '{Score} = 0', # comparing columns to each other
+                                            'column_id': 'Score'
+                                        },
+                                        'backgroundColor': 'rgba(255, 36, 71, 1)'
+                                    },
+                                         {'if': {
+                                             'filter_query': '{Score} = 1',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(255, 36, 71, 0.4)'
+                                         },
+
+                                         {'if': {
+                                             'filter_query': '{Score} = 2',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(138, 255,0, 1)'
+                                         },
+
+                                         {'if': {
+                                             'filter_query': '{Score} = 3',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(53, 108, 0, 1)'
+                                         }
+                                     ],
+                                     fill_width=False,
+                                     style_header={'backgroundColor': 'rgb(30, 30, 30)','color': 'white'},
+                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={'margin-left':'250px'}),dcc.Graph(figure=fig_),dcc.Graph(figure=fig_cyclical_trends)
         elif dropdown == "Inflation Outlook":
 
-            return dcc.Graph(figure=fig_secular_trends)
+            return html.Div(dash_table.DataTable(score_table_merged_infla.to_dict('records'),
+                                     [{"name": i, "id": i} for i in score_table_merged_infla.columns],
+                                     sort_action='native',
+
+                                     style_data_conditional=  [
+                                         {'if': {'column_id': 'Indicator'},
+                                          'width': '20px'},
+
+                                         {'if': {
+                                            'filter_query': '{Score} = 0', # comparing columns to each other
+                                            'column_id': 'Score'
+                                        },
+                                        'backgroundColor': 'rgba(255, 36, 71, 1)'
+                                    },
+                                         {'if': {
+                                             'filter_query': '{Score} = 1',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(255, 36, 71, 0.4)'
+                                         },
+
+                                         {'if': {
+                                             'filter_query': '{Score} = 2',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(138, 255,0, 1)'
+                                         },
+
+                                         {'if': {
+                                             'filter_query': '{Score} = 3',  # comparing columns to each other
+                                             'column_id': 'Score'
+                                         },
+                                             'backgroundColor': 'rgba(53, 108, 0, 1)'
+                                         }
+                                     ],
+                                     fill_width=False,
+                                     style_header={'backgroundColor': 'rgb(30, 30, 30)','color': 'white'},
+                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={"margin-left":"250px"}),dcc.Graph(figure=fig_secular_trends)
         elif dropdown == "brainard_test":
             return dcc.Graph(figure=fig_brainard)
 
