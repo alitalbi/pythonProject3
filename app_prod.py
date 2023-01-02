@@ -200,7 +200,7 @@ def trends(dropdown,tabs,date_start,date_end):
     _30y = _30y[::-1]
     _30y.index = _30y_index
 
-    _5y_nominal = pd.read_csv(PATH_DATA + "30y.csv").iloc[:, :2]
+    _5y_nominal = pd.read_csv(PATH_DATA + "5y.csv").iloc[:, :2]
     _5y_nominal.set_index("Date", inplace=True, drop=True)
     _5y_nominal['Dernier'] = _5y_nominal['Dernier'].apply(lambda x: float(x.replace(",", ".")))
     _5y_nominal_index = pd.Series(_5y_nominal.index.to_list()[::-1]).apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
@@ -454,20 +454,20 @@ def trends(dropdown,tabs,date_start,date_end):
 
     # ploting the data
     #composite_growth_10 = 100 * (composite_growth.iloc[:, 0].rolling(10).mean().pct_change())
-    fig_.add_trace(go.Scatter(x=composite_growth.index.to_list(), y=composite_growth / 100, name="6m growth average",
+    fig_.add_trace(go.Scatter(x=composite_growth.index.to_list(), y=composite_growth._6m_smoothing_growth / 100, name="6m growth average",
                               mode="lines", line=dict(width=2, color='white')))
-    fig_.add_trace(go.Scatter(x=composite_growth_10.index.to_list()[len(composite_growth_10) - 19:], y=composite_growth_10[len(composite_growth_10) - 19:] / 100, name="6m growth average",
+    fig_.add_trace(go.Scatter(x=composite_growth_10.index.to_list()[len(composite_growth_10) - 19:], y=composite_growth_10['10 yr average'][len(composite_growth_10) - 19:] / 100, name="6m growth average",
                               mode="lines", line=dict(width=2, color='green')))
 
     for x, y in zip(composite_growth.index[len(composite_growth) - 19:len(composite_growth):3],
-                    composite_growth[len(composite_growth) - 19:len(composite_growth):3]/ 100):
+                    composite_growth.iloc[len(composite_growth) - 19:len(composite_growth):3,0]/ 100):
         label = "{:.1f}".format(y*100) + " %"
         fig_.add_annotation(x=x, y=y,
                            text=label,
                            showarrow=False, yshift=10)
 
     for x, y in zip(composite_growth_10.index[len(composite_growth_10) - 19:len(composite_growth_10):3],
-                    composite_growth_10[len(composite_growth_10) - 19:len(composite_growth_10):3]/ 100):
+                    composite_growth_10.iloc[len(composite_growth_10) - 19:len(composite_growth_10):3,0]/ 100):
         label = "{:.1f}".format(y*100) + " %"
         fig_.add_annotation(x=x, y=y,
                            text=label,
@@ -491,7 +491,7 @@ def trends(dropdown,tabs,date_start,date_end):
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
     merged_data_cooper_ret = (
-        pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
+        pd.DataFrame(merged_data.iloc[:, 2].resample("6M").agg(lambda x: x[-1]))).pct_change()
     merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
     merged_.dropna(inplace=True)
     merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
