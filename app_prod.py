@@ -13,6 +13,7 @@ import os
 import datetime
 import numpy as np
 import sklearn
+import yfinance as yf
 from sklearn.model_selection import train_test_split
 
 
@@ -78,7 +79,7 @@ app.config.suppress_callback_exceptions = True
 
 timeout = 20
 
-app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
+app.layout = html.Div(style = {'backgroundColor':"rgb(17, 17, 17)"},children = [
    # dcc.Interval(id="interval_comp",interval=15*1000),
     dbc.Tabs(
                 [
@@ -92,9 +93,9 @@ app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
                 active_tab="Macroeconomic Indicators",
             ),
 
-    html.H1("Economic Framework (Talbi & Co)",style={"margin-left":"550px"}),
+    html.H1("Economic Framework (Talbi & Co)",style={"margin-left":"550px","color":"white"}),
     html.Br(),
-    html.Div([
+    html.Div([dcc.Input("INDPRO",placeholder="ticker",id="ticker_fred"),
             dcc.Input(date_start_,placeholder="start date",id="date_start"),
             dcc.Input(date_end_,placeholder="end date",id="date_end")],style={'margin-left':'650px'}),
               html.Div(id="graph_indicator",style={'margin-left':'100px'}),
@@ -102,7 +103,7 @@ app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
     #html.Div(,style={"margin-top":"10px"}),
 
         html.Div(dcc.Dropdown( id = 'dropdown',
-        options = [
+        options = [{'label':'Single Indicator search', 'value':'fred_search' },
             {'label':'brainard_test', 'value':'brainard_test' },
             {'label':'Growth', 'value':'Growth' },
             {'label': 'Inflation Outlook', 'value':'Inflation Outlook'},
@@ -112,124 +113,50 @@ app.layout = html.Div(style = {'backgroundColor':"rgba(0, 0, 0,0)"},children = [
     ])
 
 
-"""
-@app.callback(Output("graph_indicator","children"),
-              #Input("interval_comp","n_intervals"),
-              [Input("tabs","active_tab"),
-               Input("ticker","value"),
-               Input("date_start","value"),
-               Input("date_end","value"),
-              ]
-
-)
-def smoothed_2(tabs,ticker, date_start, date_end):
-    try:
-
-        fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
-        date_start2 = "2009-01-01"
-        # get data as an array and transforming it into a dataframe
-
-        indpro,indpro_10 = smooth_data(ticker,date_start,date_start2,date_end)
-
-
-        fig_ = go.Figure()
-
-        # drop the blank values
-
-
-        # ploting the data
-        fig_.add_trace(go.Scatter(x=indpro.index.to_list(),y =indpro._6m_smoothing_growth/100,name="6m growth average",mode="lines",line=dict(width=2, color='white')))
-        fig_.add_trace(go.Scatter(x=(indpro_10.index.to_list())[len(indpro_10) - 19:],y =indpro_10['10 yr average'][len(indpro_10) - 19:]/100,mode="lines",line=dict(width=2, color='green'),name="10yr average"))
-
-        fig_.update_layout(
-            template="plotly_dark",
-            title={
-                'text': fred.get_series_info(ticker).title,
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'})
-
-        fig_.update_layout(  # customize font and legend orientation & position
-            yaxis=dict(tickformat=".0%"),
-            title_font_family="Arial Black",
-            font=dict(
-                family="Rockwell",
-                size=16),
-            legend=dict(
-                title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
-            )
-        )
-        fig_.update_layout(height=650,width=1150)
-
-        # saving the figures in the static file
-        #plt.savefig('/Users/talbi/Downloads/microblog/app/static/' + ticker + ".png")
-        if tabs == "Macroeconomic Indicators":
-            return dcc.Graph(figure=fig_),
-        elif tabs == "Directional Indicators":
-            pass
-        elif tabs == "Trend-Momentum Indicators":
-            pass
-        elif tabs == "Volatility Indicators":
-            pass
-
-    except ValueError:
-        pass
-
-"""
 @app.callback(Output("trends_graphs", "children"),
               # Input("interval_comp","n_intervals"),
-              [Input("dropdown", "value"),
+              [Input("ticker_fred","value"),
+                Input("dropdown", "value"),
                Input("tabs","active_tab"),
                Input("date_start","value"),
                Input("date_end","value"),
 
                ]
               )
-def trends(dropdown,tabs,date_start,date_end):
+def trends(ticker_fred,dropdown,tabs,date_start,date_end):
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     date_start2 = "2009-01-01"
     print("1")
     #try:
     PATH_DATA = "/Users/talbi/Downloads/"
 
-    _30y = pd.read_csv(PATH_DATA + "30y.csv").iloc[:, :2]
-    _30y.set_index("Date", inplace=True, drop=True)
-    _30y['Dernier'] = _30y['Dernier'].apply(lambda x: float(x.replace(",", ".")))
-    _30y_index = pd.Series(_30y.index.to_list()[::-1]).apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
-    _30y = _30y[::-1]
-    _30y.index = _30y_index
+    _30y = yf.download("^TYX",start=date_start, end=date_end,interval="1d")[['Close']]
+    
 
-    _5y_nominal = pd.read_csv(PATH_DATA + "5y.csv").iloc[:, :2]
-    _5y_nominal.set_index("Date", inplace=True, drop=True)
-    _5y_nominal['Dernier'] = _5y_nominal['Dernier'].apply(lambda x: float(x.replace(",", ".")))
-    _5y_nominal_index = pd.Series(_5y_nominal.index.to_list()[::-1]).apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
-    _5y_nominal = _5y_nominal[::-1]
-    _5y_nominal.index = _5y_nominal_index
 
+    _5y_nominal = yf.download("^FVX",start=date_start, end=date_end,interval="1d")[['Close']]
+
+    cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1d")[['Close']]
+    cooper_prices = cooper * 100
     _5y_nominal_var = _5y_nominal.diff()
 
     _5y_real = pd.DataFrame(
-        fred.get_series("DFII5", observation_start="1970-01-01", observation_end="2022-12-30", freq="daily"))
-    _5y_real.columns = ['Dernier']
+        fred.get_series("DFII5", observation_start=date_start, observation_end=date_end, freq="daily"))
+    _5y_real.columns = ['Close']
+
 
     spread = _30y - _5y_real
 
-    cooper_prices = pd.read_csv(PATH_DATA + "cooper_prices.csv").iloc[:, :2]
-    cooper_prices.set_index("Date", inplace=True, drop=True)
-    cooper_prices['Dernier'] = cooper_prices['Dernier'].apply(lambda x: float(x.replace(",", ".")))
-    cooper_prices_index = pd.Series(cooper_prices.index.to_list()[::-1]).apply(
-        lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
-    cooper_prices = cooper_prices[::-1]*100
-    cooper_prices.index = cooper_prices_index
-    merged_data = pd.concat([spread, _5y_nominal, cooper_prices], axis=1)
+
+    merged_data = pd.concat([spread, _5y_nominal,cooper_prices], axis=1)
     merged_data.dropna(inplace=True)
-    merged_data.columns = ["spread 30_5yr", "5y", "cooper"]
+    merged_data.columns = ["spread 30_5yr", "5y", "cooper",]
+
 
     # Data importing
     print("2")
     cpi, cpi_10 = smooth_data("CPIAUCSL", date_start, date_start2, date_end)
-
+    single_search,single_search_10 = smooth_data(ticker_fred,date_start,date_start2,date_end)
     pcec96, pcec96_10 = smooth_data("PCEC96", date_start, date_start2, date_end)
     #pcec96 = pcec96[["_6m_smoothing_growth"]]-cpi[["_6m_smoothing_growth"]]
     #pcec96_10 = pcec96_10[['10 yr average']]-cpi_10[['10 yr average']]
@@ -263,6 +190,9 @@ def trends(dropdown,tabs,date_start,date_end):
     wage_tracker.columns = ['date', "wage_tracker"]
     wage_tracker.set_index('date', inplace=True)
 
+    wheat_ = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1d")[['Close']]
+    oil_ = yf.download("CL=F",start=date_start, end=date_end,interval="1d")[['Close']]
+    gas_ = yf.download("NG=F",start=date_start, end=date_end,interval="1d")[['Close']]
 
 
     employment_level_wage_tracker = pd.concat([employment_level, wage_tracker], axis=1)
@@ -280,16 +210,27 @@ def trends(dropdown,tabs,date_start,date_end):
 
     composite_data = pd.concat([pcec96[['_6m_smoothing_growth']],indpro[['_6m_smoothing_growth']],nonfarm[['_6m_smoothing_growth']],real_pers[['_6m_smoothing_growth']],retail_sales[['_6m_smoothing_growth']],employment_level[['_6m_smoothing_growth']]],axis=1)
     composite_data.dropna(inplace=True)
-    composite_growth = pd.DataFrame(composite_data.sum(axis=1))
+    composite_growth = pd.DataFrame(composite_data.mean(axis=1))
     composite_growth.columns = ["_6m_smoothing_growth"]
     composite_growth_10 = pd.concat([pcec96_10[['10 yr average']],indpro_10[['10 yr average']],nonfarm_10[['10 yr average']],real_pers_10[['10 yr average']],retail_sales_10[['10 yr average']],employment_level_10[['10 yr average']]],axis=1)
     composite_growth_10.dropna(inplace=True)
-    composite_growth_10 = pd.DataFrame(composite_growth_10.sum(axis=1))
+    composite_growth_10 = pd.DataFrame(composite_growth_10.mean(axis=1))
     composite_growth_10.columns=["10 yr average"]
 
-    print("6")
-    # pcec96 =
 
+
+
+    spread_norm = (spread - np.mean(spread)) / np.std(spread)
+
+    # cooper_norm = (spread - np.mean(spread)) / np.std(spread)
+    cooper_norm = (cooper - np.mean(cooper)) / np.std(cooper)
+
+    merged_data_norm = pd.concat([spread_norm, cooper_norm], axis=1)
+    merged_data_norm.columns = ["spread normalized", "cooper normalized"]
+    merged_data_norm.dropna(inplace=True)
+    # plt.plot(cooper.index.to_list(),cooper[['Close']])
+
+    print("6")
     retail_sales_title = fred.get_series_info("MRTSSM44X72USS").title
 
     employment_level_title = fred.get_series_info("CE16OV").title
@@ -309,19 +250,20 @@ def trends(dropdown,tabs,date_start,date_end):
     shelter_title = fred.get_series_info("CUSR0000SAH1").title
     wages_title = fred.get_series_info("CES0500000003").title
 
-    score_table_merged = pd.concat([score_table(pce_title, pcec96, pcec96_10), score_table(indpro_title,indpro, indpro_10),
-                                    score_table(nonfarm_title,nonfarm, nonfarm_10),
-                                    score_table(real_personal_income_title,real_pers,real_pers_10),
-                                    score_table(retail_sales_title,retail_sales,retail_sales_10),
-                                    score_table(employment_level_title,employment_level,employment_level_10),
+    score_table_merged = pd.concat([score_table("PCE", pcec96, pcec96_10), score_table("Industrial Production",indpro, indpro_10),
+                                    score_table("NonFarm Payroll",nonfarm, nonfarm_10),
+                                    score_table("Real Personal Income",real_pers,real_pers_10),
+                                    score_table("Real Retail Sales",retail_sales,retail_sales_10),
+                                    score_table("Employment Level",employment_level,employment_level_10),
                                     score_table("COMPOSITE GROWTH",composite_growth,composite_growth_10)], axis = 0)
+    score_table_merged = score_table_merged.iloc[:, [4, 0, 1, 2, 3]]
 
-    score_table_merged_infla = pd.concat([score_table(cpi_title, cpi, cpi_10), score_table(indpro_title,indpro, indpro_10),
-                                    score_table(core_cpi_title,core_cpi, core_cpi_10),
-                                    score_table(pce_title,pcec96,pcec96_10),
-                                    score_table(core_pce_title, core_pce, core_pce_10),
-                                    score_table(shelter_title,shelter_prices,shelter_prices_10)], axis = 0)
-    score_table_merged = score_table_merged.iloc[:,[4,0,1,2,3]]
+    score_table_merged_infla = pd.concat([score_table("CPI", cpi, cpi_10),
+                                    score_table("Core CPI",core_cpi, core_cpi_10),
+                                    score_table("PCE",pcec96,pcec96_10),
+                                    score_table("Core PCE", core_pce, core_pce_10),
+                                    score_table("Shelter Prices",shelter_prices,shelter_prices_10)], axis = 0)
+
     score_table_merged_infla = score_table_merged_infla.iloc[:, [4, 0, 1, 2, 3]]
     #score_table_merged.set_index("index", inplace=True)
 
@@ -434,7 +376,7 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_secular_trends.add_trace( go.Scatter(x=employment_level_wage_tracker.index.to_list(), y=employment_level_wage_tracker.wage_tracker, name="Atlanta Fed wage tracker",
                    mode="lines", line=dict(width=2, color='blue'), showlegend=True),secondary_y=True, row=3, col=2)
     fig_secular_trends.update_layout(template="plotly_dark",
-                                      height=1200, width=1500)
+                                      height=1000, width=1500)
     fig_secular_trends.update_layout(  # customize font and legend orientation & position
         yaxis=dict(tickformat=".1%"),
         title_font_family="Arial Black",
@@ -448,6 +390,36 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_secular_trends.layout.yaxis4.tickformat = ".1%"
     fig_secular_trends.layout.yaxis5.tickformat = ".1%"
 
+    fig_secular_trends_2 = make_subplots(rows=2,cols=2)
+
+    fig_secular_trends_2.add_trace( go.Scatter(x=wheat_.index.to_list(), y=wheat_['Close'], name="Wheat prices",
+                   mode="lines", line=dict(width=2, color='white')),row=1,col=1)
+    fig_secular_trends_2.add_trace(go.Scatter(x=wheat_.index.to_list(), y=cooper['Close'], name="Cooper prices",
+                                              mode="lines", line=dict(width=2, color='orange')),row=1,col=2)
+    fig_secular_trends_2.add_trace(go.Scatter(x=gas_.index.to_list(), y=gas_['Close'], name="Gas prices",
+                                              mode="lines", line=dict(width=2, color='green')),row=2,col=1)
+    fig_secular_trends_2.add_trace(go.Scatter(x=oil_.index.to_list(), y=oil_['Close'], name="Oil prices",
+                                              mode="lines", line=dict(width=2, color='blue')),row=2,col=2)
+
+    fig_secular_trends_2.update_layout(
+        template="plotly_dark",
+        title={
+            'text': "Commodities prices",
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'})
+
+    fig_secular_trends_2.update_layout(  # customize font and legend orientation & position
+        title_font_family="Arial Black",
+        font=dict(
+            family="Rockwell",
+            size=16),
+        legend=dict(
+            title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
+        )
+    )
+    fig_secular_trends_2.update_layout(height=650, width=1500)
     fig_ = go.Figure()
 
     # drop the blank values
@@ -482,7 +454,14 @@ def trends(dropdown,tabs,date_start,date_end):
                    mode="lines", line=dict(width=2, color='purple')),secondary_y=False,col=1,row=1)
     fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:,2], name="Cooper prices",
                                       mode="lines", line=dict(width=2, color='orange')),secondary_y=True,col=1,row=1)
-
+    fig_brainard.add_trace(
+        go.Scatter(x=merged_data_norm.index.to_list(), y=merged_data_norm['spread normalized'], name="spread normalized",
+                   mode="lines", line=dict(width=2, color='green'), showlegend=True), secondary_y=True,
+        col=1, row=1)
+    fig_brainard.add_trace(
+        go.Scatter(x=merged_data_norm.index.to_list(), y=merged_data_norm['cooper normalized'], name="cooper normalizd",
+                   mode="lines", line=dict(width=2, color='blue'), showlegend=True), secondary_y=True,
+        col=1, row=1)
     merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
     merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
     merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
@@ -506,14 +485,24 @@ def trends(dropdown,tabs,date_start,date_end):
     fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
                                       mode="lines", line=dict(width=2, color='red'),showlegend=True), secondary_y=True, col=1, row=1)
 
+    fig_fred_search = go.Figure()
+
+    fig_fred_search.add_trace(go.Scatter(x=single_search.index.to_list(), y=single_search._6m_smoothing_growth / 100,
+                              name="6m growth average",
+                              mode="lines", line=dict(width=2, color='white')))
+    fig_fred_search.add_trace(go.Scatter(x=single_search_10.index.to_list()[len(single_search_10) - 19:],
+                              y=single_search_10['10 yr average'][len(single_search_10) - 19:] / 100,
+                              name="6m growth average",
+                              mode="lines", line=dict(width=2, color='green')))
+
     fig_.update_layout(
-        template="plotly_dark",
-        title={
-            'text': "COMPOSITE GROWTH",
-            'y': 0.9,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'})
+            template="plotly_dark",
+            title={
+                'text': "COMPOSITE GROWTH",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'})
 
     fig_.update_layout(  # customize font and legend orientation & position
         yaxis=dict(tickformat=".0%"),
@@ -525,8 +514,27 @@ def trends(dropdown,tabs,date_start,date_end):
             title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
         )
     )
-    fig_.update_layout(height=650, width=1500)
+    fig_fred_search.update_layout(height=650, width=1500)
+    fig_fred_search.update_layout(
+        template="plotly_dark",
+        title={
+            'text': fred.get_series_info(ticker_fred).title,
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'})
 
+    fig_fred_search.update_layout(  # customize font and legend orientation & position
+        yaxis=dict(tickformat=".0%"),
+        title_font_family="Arial Black",
+        font=dict(
+            family="Rockwell",
+            size=16),
+        legend=dict(
+            title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
+        )
+    )
+    fig_fred_search.update_layout(height=650, width=1500)
     fig_brainard.update_layout(
         template="plotly_dark",
         title={
@@ -546,8 +554,7 @@ def trends(dropdown,tabs,date_start,date_end):
             title=None, orientation="h", y=1, yanchor="bottom", x=0.5, xanchor="center"
         )
     )
-    fig_brainard.update_layout(height=1250, width=1500)
-
+    fig_brainard.update_layout(height=1000, width=1500)
 
     if tabs == "Macroeconomic Indicators":
         if dropdown == "Growth":
@@ -576,19 +583,19 @@ def trends(dropdown,tabs,date_start,date_end):
                                              'filter_query': '{Score} = 2',  # comparing columns to each other
                                              'column_id': 'Score'
                                          },
-                                             'backgroundColor': 'rgba(138, 255,0, 1)'
+                                             'backgroundColor': 'rgba(53, 108, 0, 1)'
                                          },
 
                                          {'if': {
                                              'filter_query': '{Score} = 3',  # comparing columns to each other
                                              'column_id': 'Score'
                                          },
-                                             'backgroundColor': 'rgba(53, 108, 0, 1)'
+                                             'backgroundColor': 'rgba(138, 255,0, 1)'
                                          }
                                      ],
                                      fill_width=False,
                                      style_header={'backgroundColor': 'rgb(30, 30, 30)','color': 'white'},
-                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={'margin-left':'250px'}),dcc.Graph(figure=fig_),dcc.Graph(figure=fig_cyclical_trends)
+                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={'margin-left':'450px'}),dcc.Graph(figure=fig_),dcc.Graph(figure=fig_cyclical_trends)
         elif dropdown == "Inflation Outlook":
 
             return html.Div(dash_table.DataTable(score_table_merged_infla.to_dict('records'),
@@ -628,9 +635,12 @@ def trends(dropdown,tabs,date_start,date_end):
                                      ],
                                      fill_width=False,
                                      style_header={'backgroundColor': 'rgb(30, 30, 30)','color': 'white'},
-                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={"margin-left":"250px"}),dcc.Graph(figure=fig_secular_trends)
+                                     style_data={'backgroundColor': 'rgb(30, 30, 30)','color': 'white','whiteSpace': 'normal','height': 'auto'}),style={"margin-left":"450px"}),\
+                    dcc.Graph(figure=fig_secular_trends_2),dcc.Graph(figure=fig_secular_trends)
         elif dropdown == "brainard_test":
             return dcc.Graph(figure=fig_brainard)
+        elif dropdown == "fred_search":
+            return dcc.Graph(figure=fig_fred_search)
 
     elif tabs == "Directional Indicators":
 
