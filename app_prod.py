@@ -79,7 +79,7 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
     # dcc.Interval(id="interval_comp",interval=15*1000),
     dbc.Tabs(
         [
-            dbc.Button('Query', id='query_button'),
+           #dbc.Button('Query', id='query_button'),
            # dbc.Tab(label="Volatility Indicators", tab_id="Volatility Indicators"),
            # dbc.Tab(label="Macroeconomic Indicators", tab_id="Macroeconomic Indicators"),
            # dbc.Tab(label="Directional Indicators", tab_id="Directional Indicators"),
@@ -127,12 +127,8 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
               # Input("interval_comp","n_intervals"),
               [Input("dropdown", "value"),
                Input("date_start", "value"),
-               Input("date_end", "value"),
-                Input("query_button", "n_clicks")],
-
-
-              )
-def trends(dropdown, date_start, date_end,button):
+               Input("date_end", "value")])
+def trends(dropdown, date_start, date_end):
     if len(date_start) != 10:
         date_start = "2021-01-01"
     cwd = os.getcwd()+"/"
