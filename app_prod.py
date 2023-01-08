@@ -19,7 +19,6 @@ from sklearn.model_selection import train_test_split
 
 
 def smooth_data(internal_ticker, date_start, date_start2, date_end):
-
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
     data_.index = pd.to_datetime(data_.index)
     data_= data_.loc[(data_.index >date_start) & (data_.index <date_end)]
@@ -134,10 +133,15 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
 
               )
 def trends(dropdown, date_start, date_end,button):
+    if len(date_start) != 10:
+        date_start = "2021-01-01"
     cwd = os.getcwd()+"/"
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     date_start2 = "2004-01-01"
-    date_start = date_start[:3] + str(int(date_start[3]) - 1) + date_start[4:]
+    try :
+        date_start = date_start[:3] + str(int(date_start[3]) - 1) + date_start[4:]
+    except ValueError:
+        pass
     print(date_start)
     if dropdown == "Growth":
         print("6")
@@ -208,7 +212,10 @@ def trends(dropdown, date_start, date_end,button):
                 'x': 0.5,
                 'xanchor': 'center',
                 'yanchor': 'top'})
-        date_start = date_start[:3]+str(int(date_start[3])+1)+date_start[4:]
+        try:
+            date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+        except ValueError:
+            pass
         fig_.update_layout(xaxis_range = [date_start,date_end])
         #           max(composite_growth._6m_smoothing_growth) * 1.1])
         fig_.update_layout(  # customize font and legend orientation & position
@@ -477,7 +484,7 @@ def trends(dropdown, date_start, date_end,button):
         fig_secular_trends.update_layout(template="plotly_dark",
                                          height=1000, width=1500)
         fig_secular_trends.update_layout(  # customize font and legend orientation & position
-            yaxis=dict(tickformat=".1%"),
+            yaxis=dict(tickformat=".0%"),
             title_font_family="Arial Black",
             font=dict(
                 family="Rockwell",
@@ -487,11 +494,11 @@ def trends(dropdown, date_start, date_end,button):
             )
         )
 
-        fig_secular_trends.layout.yaxis2.tickformat = ".1%"
-        fig_secular_trends.layout.yaxis3.tickformat = ".1%"
-        fig_secular_trends.layout.yaxis4.tickformat = ".1%"
-        fig_secular_trends.layout.yaxis5.tickformat = ".1%"
-        fig_secular_trends.layout.yaxis6.tickformat = ".1%"
+        fig_secular_trends.layout.yaxis2.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis3.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis4.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis5.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis6.tickformat = ".2%"
 
         fig_secular_trends_2 = make_subplots(rows=2, cols=2)
 
@@ -524,8 +531,10 @@ def trends(dropdown, date_start, date_end,button):
             )
         )
         fig_secular_trends_2.update_layout(height=650, width=1500)
-
-        date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+        try:
+            date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+        except ValueError:
+            pass
 
 
         fig_secular_trends_2.layout.xaxis.range = [date_start, date_end]
