@@ -59,8 +59,7 @@ def score_table(index, data_, data_10):
 # (new factor) : variation of real rate
 # Parameters for the request from the FRED Website
 
-date_start_ = "2017-01-01"
-date_end_ = "2022-12-10"
+
 
 frequency_ = 'monthly'
 
@@ -94,8 +93,8 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
 
     html.H1("Economic Framework (Talbi & Co)", style={"margin-left": "550px", "color": "white"}),
     html.Br(),
-    html.Div([dcc.Input(date_start_, placeholder="start date", id="date_start"),
-              dcc.Input(date_end_, placeholder="end date", id="date_end")], style={'margin-left': '650px'}),
+    html.Div([dcc.Input("2021-01-01", placeholder="start date", id="date_start"),
+              dcc.Input("2023-01-01", placeholder="end date", id="date_end")], style={'margin-left': '650px'}),
     html.Div(id="graph_indicator", style={'margin-left': '100px'}),
 
     # html.Div(,style={"margin-top":"10px"}),
@@ -104,7 +103,6 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
         dcc.Dropdown(
             id='dropdown',
             options=[
-                {'label': 'Single Indicator search', 'value': 'fred_search'},
                 {'label': 'brainard_test', 'value': 'brainard_test'},
                 {'label': 'Growth', 'value': 'Growth'},
                 {'label': 'Inflation Outlook', 'value': 'Inflation Outlook'},
@@ -139,7 +137,8 @@ def trends(dropdown, date_start, date_end,button):
     cwd = os.getcwd()+"/"
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     date_start2 = "2004-01-01"
-
+    date_start = date_start[:3] + str(int(date_start[3]) - 1) + date_start[4:]
+    print(date_start)
     if dropdown == "Growth":
         print("6")
         retail_sales_title = "Real Retail Sales"
@@ -535,7 +534,7 @@ def trends(dropdown, date_start, date_end,button):
         fig_secular_trends_2.layout.xaxis4.range = [date_start, date_end]
 
 
-        date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+
 
         fig_secular_trends.layout.xaxis.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis2.range = [date_start, date_end]
