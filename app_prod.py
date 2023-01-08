@@ -22,14 +22,19 @@ def smooth_data(internal_ticker, date_start, date_start2, date_end):
 
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
     data_.index = pd.to_datetime(data_.index)
+    data_= data_.loc[(data_.index >date_start) & (data_.index <date_end)]
+
+
+
     data_2 = pd.read_csv(internal_ticker+"10.csv",index_col="Unnamed: 0")
     data_2.index = pd.to_datetime(data_2.index)
+    data_2 = data_2.loc[(data_2.index >date_start2) & (data_2.index <date_end)]
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
     average =  data_.iloc[:, 0].rolling(11).mean()
 
     # Calculate the annualized growth rate
-    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][11:] / average) ** (365 / 180) - 1
+    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][11:] / average) ** (12/6) - 1
 
     # Multiply the result by 100 and store it in the _6m_smoothing_growth column
     data_['_6m_smoothing_growth'] = 100*annualized_6m_smoothed_growth_rate
@@ -198,16 +203,17 @@ def trends(dropdown, date_start, date_end,button):
                                   mode="lines", line=dict(width=2, color='green')))
         fig_.update_layout(
             template="plotly_dark",
-            xaxis={'range': [str(date_start), str(date_end)]},
             title={
                 'text': "COMPOSITE GROWTH",
                 'y': 0.9,
                 'x': 0.5,
                 'xanchor': 'center',
                 'yanchor': 'top'})
-
+        date_start = date_start[:3]+str(int(date_start[3])+1)+date_start[4:]
+        fig_.update_layout(xaxis_range = [date_start,date_end])
+        #           max(composite_growth._6m_smoothing_growth) * 1.1])
         fig_.update_layout(  # customize font and legend orientation & position
-            yaxis=dict(tickformat=".0%"),
+            yaxis=dict(tickformat=".1%"),
 
             title_font_family="Arial Black",
             font=dict(
@@ -215,8 +221,9 @@ def trends(dropdown, date_start, date_end,button):
                 size=16),
             legend=dict(
                 title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
-            )
+            ),
         )
+
         fig_cyclical_trends = make_subplots(rows=3, cols=2, subplot_titles=[pce_title, indpro_title
             , nonfarm_title, real_personal_income_title, retail_sales_title, employment_level_title])
 
@@ -289,7 +296,7 @@ def trends(dropdown, date_start, date_end,button):
         fig_cyclical_trends.layout.yaxis5.tickformat = ".2%"
         fig_cyclical_trends.layout.yaxis6.tickformat = ".2%"
         # date_start = (datetime.datetime.strptime(date_start, "%Y-%m-%d") + timedelta(days=130)).strftime("%Y-%m-%d")
-        fig_cyclical_trends.update_layout(xaxis_range=[date_start, date_end])
+       # fig_cyclical_trends.update_layout(xaxis_range=[date_start, date_end])
 
         fig_cyclical_trends.layout.xaxis.range = [date_start, date_end]
         fig_cyclical_trends.layout.xaxis2.range = [date_start, date_end]
@@ -298,8 +305,8 @@ def trends(dropdown, date_start, date_end,button):
         fig_cyclical_trends.layout.xaxis5.range = [date_start, date_end]
         fig_cyclical_trends.layout.xaxis6.range = [date_start, date_end]
 
-        fig_cyclical_trends.update_layout(xaxis_range=[date_start, date_end])
 
+        fig_['layout']['yaxis'].update(autorange=True)
         score_table_merged = pd.concat(
             [score_table("PCE", pcec96, pcec96_10), score_table("Industrial Production", indpro, indpro_10),
              score_table("NonFarm Payroll", nonfarm, nonfarm_10),
@@ -416,7 +423,7 @@ def trends(dropdown, date_start, date_end,button):
                                                            "Employment (Growth) and Wage tracker levels"])
 
         fig_secular_trends.add_trace(
-            go.Scatter(x=cpi.index.to_list(), y=cpi._6m_smoothing_growth, name="6m growth average",
+            go.Scatter(x=cpi.index.to_list(), y=cpi._6m_smoothing_growth/100, name="6m growth average",
                        mode="lines", line=dict(width=2, color='white')), secondary_y=False, row=1, col=1)
         fig_secular_trends.add_trace(go.Scatter(x=(cpi_10.index.to_list()),
                                                 y=(cpi_10['10 yr average']) / 100, mode="lines",
@@ -424,7 +431,7 @@ def trends(dropdown, date_start, date_end,button):
                                                 name="10yr average"), secondary_y=False, row=1, col=1)
 
         fig_secular_trends.add_trace(
-            go.Scatter(x=core_cpi.index.to_list(), y=core_cpi._6m_smoothing_growth, name="6m growth average",
+            go.Scatter(x=core_cpi.index.to_list(), y=core_cpi._6m_smoothing_growth/100, name="6m growth average",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), secondary_y=False, row=1,
             col=2)
         fig_secular_trends.add_trace(go.Scatter(x=(core_cpi_10.index.to_list()),
@@ -433,7 +440,7 @@ def trends(dropdown, date_start, date_end,button):
                                                 name="10yr average", showlegend=False), secondary_y=False, row=1, col=2)
 
         fig_secular_trends.add_trace(
-            go.Scatter(x=pcec96.index.to_list(), y=pcec96._6m_smoothing_growth, name="6m growth average",
+            go.Scatter(x=pcec96.index.to_list(), y=pcec96._6m_smoothing_growth/100, name="6m growth average",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), secondary_y=False, row=2,
             col=1)
         fig_secular_trends.add_trace(go.Scatter(x=(pcec96_10.index.to_list()),
@@ -442,14 +449,14 @@ def trends(dropdown, date_start, date_end,button):
                                                 name="10yr average", showlegend=False), secondary_y=False, row=2, col=1)
 
         fig_secular_trends.add_trace(
-            go.Scatter(x=core_pce.index.to_list(), y=core_pce._6m_smoothing_growth, name="6m growth average",
+            go.Scatter(x=core_pce.index.to_list(), y=core_pce._6m_smoothing_growth/100, name="6m growth average",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), row=2, col=2)
         fig_secular_trends.add_trace(go.Scatter(x=(core_pce_10.index.to_list()),
                                                 y=core_pce_10['10 yr average'] / 100,
                                                 line=dict(width=2, color='green'), mode="lines",
                                                 name="10yr average", showlegend=False), secondary_y=False, row=2, col=2)
         fig_secular_trends.add_trace(
-            go.Scatter(x=shelter_prices.index.to_list(), y=shelter_prices._6m_smoothing_growth,
+            go.Scatter(x=shelter_prices.index.to_list(), y=shelter_prices._6m_smoothing_growth/100,
                        name="6m growth average",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), secondary_y=False, row=3,
             col=1)
@@ -460,7 +467,7 @@ def trends(dropdown, date_start, date_end,button):
 
         fig_secular_trends.add_trace(
             go.Scatter(x=employment_level_wage_tracker.index.to_list(),
-                       y=employment_level_wage_tracker._6m_smoothing_growth,
+                       y=employment_level_wage_tracker._6m_smoothing_growth/100,
                        name="Employment level 6m annualized growth",
                        mode="lines", line=dict(width=2, color='white'), showlegend=True), secondary_y=False, row=3,
             col=2)
@@ -481,10 +488,11 @@ def trends(dropdown, date_start, date_end,button):
             )
         )
 
-        fig_secular_trends.layout.yaxis2.tickformat = ".2%"
-        fig_secular_trends.layout.yaxis3.tickformat = ".2%"
-        fig_secular_trends.layout.yaxis4.tickformat = ".2%"
-        fig_secular_trends.layout.yaxis5.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis2.tickformat = ".1%"
+        fig_secular_trends.layout.yaxis3.tickformat = ".1%"
+        fig_secular_trends.layout.yaxis4.tickformat = ".1%"
+        fig_secular_trends.layout.yaxis5.tickformat = ".1%"
+        fig_secular_trends.layout.yaxis6.tickformat = ".1%"
 
         fig_secular_trends_2 = make_subplots(rows=2, cols=2)
 
@@ -518,17 +526,23 @@ def trends(dropdown, date_start, date_end,button):
         )
         fig_secular_trends_2.update_layout(height=650, width=1500)
 
+        date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+
+
+        fig_secular_trends_2.layout.xaxis.range = [date_start, date_end]
+        fig_secular_trends_2.layout.xaxis2.range = [date_start, date_end]
+        fig_secular_trends_2.layout.xaxis3.range = [date_start, date_end]
+        fig_secular_trends_2.layout.xaxis4.range = [date_start, date_end]
+
+
+        date_start = date_start[:3] + str(int(date_start[3]) + 1) + date_start[4:]
+
         fig_secular_trends.layout.xaxis.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis2.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis3.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis4.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis5.range = [date_start, date_end]
         fig_secular_trends.layout.xaxis6.range = [date_start, date_end]
-
-        fig_secular_trends_2.layout.xaxis.range = [date_start, date_end]
-        fig_secular_trends_2.layout.xaxis2.range = [date_start, date_end]
-        fig_secular_trends_2.layout.xaxis3.range = [date_start, date_end]
-        fig_secular_trends_2.layout.xaxis4.range = [date_start, date_end]
 
         return html.Div(dash_table.DataTable(score_table_merged_infla.to_dict('records'),
                                                  [{"name": i, "id": i} for i in score_table_merged_infla.columns],
@@ -558,7 +572,7 @@ def trends(dropdown, date_start, date_end,button):
                                                          # comparing columns to each other
                                                          'column_id': 'Score'
                                                      },
-                                                         'backgroundColor': 'rgba(138, 255,0, 1)'
+                                                         'backgroundColor': 'rgba(53, 108, 0, 1)'
                                                      },
 
                                                      {'if': {
@@ -566,7 +580,7 @@ def trends(dropdown, date_start, date_end,button):
                                                          # comparing columns to each other
                                                          'column_id': 'Score'
                                                      },
-                                                         'backgroundColor': 'rgba(53, 108, 0, 1)'
+                                                         'backgroundColor': 'rgba(138, 255,0, 1)'
                                                      }
                                                  ],
                                                  fill_width=False,
