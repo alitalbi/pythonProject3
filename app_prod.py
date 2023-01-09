@@ -654,7 +654,7 @@ def trends(dropdown, date_start, date_end):
 
 
         fig_brainard = make_subplots(cols=1, rows=2, specs=[[{"secondary_y": True}], [{"secondary_y": True}]],
-                                     subplot_titles=["Levels", "Returns"])
+                                     subplot_titles=["Levels", "Returns"],shared_xaxes=True)
 
         fig_brainard.add_trace(
             go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 0], name="Spread",
@@ -666,15 +666,10 @@ def trends(dropdown, date_start, date_end):
                                           mode="lines", line=dict(width=2, color='orange')), secondary_y=True, col=1,
                                row=1)
 
-        merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
-        merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
-        merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
-        merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
-        #   merged_['dummy_cooper'] = np.where(merged_['cooper'])
+
         merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
         merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
-        merged_data_cooper_ret = (
-            pd.DataFrame(merged_data.iloc[:, 2].resample("6M").agg(lambda x: x[-1]))).pct_change()
+        merged_data_cooper_ret = (pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
         merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
         merged_.dropna(inplace=True)
         merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
@@ -713,8 +708,8 @@ def trends(dropdown, date_start, date_end):
             )
         )
         fig_brainard.update_layout(height=1000, width=1500)
-
-
+        fig_brainard.update_layout(
+            xaxis=dict(rangeslider=dict(visible=True)))
         return dcc.Graph(figure=fig_brainard)
 
 
