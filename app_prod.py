@@ -17,6 +17,26 @@ import sklearn
 import yfinance as yf
 from sklearn.model_selection import train_test_split
 
+def commo_smooth_data(internal_ticker, date_start,date_end):
+
+    data_ = pd.read_csv(internal_ticker+".csv",index_col="Date")
+    data_.index = pd.to_datetime(data_.index)
+
+    data_ = data_.loc[(data_.index > date_start) & (data_.index < date_end)]
+
+    # creating 6m smoothing growth column and 10yr average column
+    # Calculate the smoothed average
+    average =  data_.iloc[:, 0].rolling(11).mean()
+
+    # Calculate the annualized growth rate
+    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][11:] / average) ** (365 / 180) - 1
+
+    # Multiply the result by 100 and store it in the _6m_smoothing_growth column
+    data_['_6m_smoothing_growth'] = 100*annualized_6m_smoothed_growth_rate
+    data_['mom_average'] = data_.iloc[:, 0].pct_change(periods=1)
+    data_['10 yr average'] = data_['mom_average'].rolling(100).mean()*100
+    data_.dropna(inplace=True)
+    return data_[['mom_average']], data_[['10 yr average']]
 
 def smooth_data(internal_ticker, date_start, date_start2, date_end):
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
@@ -134,8 +154,9 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
                Input("date_start", "value"),
                Input("date_end", "value")])
 def trends(dropdown, date_start, date_end):
-    if len(date_start) != 10:
+    if len(date_start) != 10 and len(date_end) != 10:
         date_start = "2021-01-01"
+        date_end = datetime.datetime.now().strftime("%Y-%m-%d")
     cwd = os.getcwd()+"/"
     fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
     date_start2 = "2004-01-01"
@@ -381,17 +402,18 @@ def trends(dropdown, date_start, date_end):
                         style={'margin-left': '450px'}), dcc.Graph(figure=fig_), dcc.Graph(
             figure=fig_cyclical_trends)
     elif dropdown == "Inflation Outlook":
-        wheat = pd.read_csv(cwd + "wheat.csv", index_col="Date")
-        wheat.index = pd.to_datetime(wheat.index)
+        wheat, wheat10 = commo_smooth_data("wheat", date_start,date_end)
+        print(wheat)
 
-        gas = pd.read_csv(cwd + "gas.csv", index_col="Date")
-        gas.index = pd.to_datetime(gas.index)
+        gas, gas10 = commo_smooth_data("gas", date_start,date_end)
+        print(wheat)
 
-        oil = pd.read_csv(cwd + "oil.csv", index_col="Date")
-        oil.index = pd.to_datetime(oil.index)
+        oil, oil10 = commo_smooth_data("oil", date_start,date_end)
+        print(wheat)
 
-        cooper_prices = pd.read_csv(cwd + "cooper_prices.csv", index_col="Date")
-        cooper_prices.index = pd.to_datetime(cooper_prices.index)
+        cooper_prices, cooper_prices10 = commo_smooth_data("cooper_prices", date_start,date_end)
+        print(wheat)
+
 
         # Data importing
 
@@ -424,7 +446,11 @@ def trends(dropdown, date_start, date_end):
         shelter_title = "Shelter Prices"
         wages_title = " Fred Wages"
 
-        score_table_merged_infla = pd.concat([score_table("CPI", cpi, cpi_10),
+        score_table_merged_infla = pd.concat([score_table("Gas", gas, gas10),
+                                              score_table("Oil", oil, oil10),
+                                              score_table("Wheat", wheat, wheat10),
+                                              score_table("Cooper", cooper_prices, cooper_prices10),
+                                                score_table("CPI", cpi, cpi_10),
                                               score_table("Core CPI", core_cpi, core_cpi_10),
                                               score_table("PCE", pcec96, pcec96_10),
                                               score_table("Core PCE", core_pce, core_pce_10),
@@ -516,15 +542,28 @@ def trends(dropdown, date_start, date_end):
 
         fig_secular_trends_2 = make_subplots(rows=2, cols=2)
 
-        fig_secular_trends_2.add_trace(go.Scatter(x=wheat.index.to_list(), y=wheat['Close'], name="Wheat prices",
+        fig_secular_trends_2.add_trace(go.Scatter(x=wheat.index.to_list(), y=wheat.iloc[:,0], name="Wheat 6m annualized growth",
                                                   mode="lines", line=dict(width=2, color='white')), row=1, col=1)
         fig_secular_trends_2.add_trace(
-            go.Scatter(x=wheat.index.to_list(), y=cooper_prices['Close'], name="Cooper prices",
+            go.Scatter(x=wheat.index.to_list(), y=wheat10.iloc[:, 0], name="Wheat 10YR average",
+                       mode="lines", line=dict(width=2, color='green'),showlegend=True), row=1, col=1)
+        fig_secular_trends_2.add_trace(
+            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices.iloc[:,0], name="Cooper 6m annualized growth",
                        mode="lines", line=dict(width=2, color='orange')), row=1, col=2)
-        fig_secular_trends_2.add_trace(go.Scatter(x=gas.index.to_list(), y=gas['Close'], name="Gas prices",
-                                                  mode="lines", line=dict(width=2, color='green')), row=2, col=1)
-        fig_secular_trends_2.add_trace(go.Scatter(x=oil.index.to_list(), y=oil['Close'], name="Oil prices",
-                                                  mode="lines", line=dict(width=2, color='blue')), row=2, col=2)
+        fig_secular_trends_2.add_trace(
+            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices10.iloc[:, 0], name="Wheat 10YR average",
+                       mode="lines", line=dict(width=2, color='green'), showlegend=False), row=1, col=2)
+        fig_secular_trends_2.add_trace(go.Scatter(x=gas.index.to_list(), y=gas.iloc[:,0], name="Gas 6m annualized growth",
+                                                  mode="lines", line=dict(width=2, color='purple')), row=2, col=1)
+        fig_secular_trends_2.add_trace(
+            go.Scatter(x=gas.index.to_list(), y=gas10.iloc[:, 0],
+                       mode="lines", line=dict(width=2, color='green'), showlegend=False), row=2, col=1)
+
+        fig_secular_trends_2.add_trace(go.Scatter(x=oil.index.to_list(), y=oil.iloc[:,0], name="Oil 6m annualized growth",
+                                                  mode="lines", line=dict(width=2, color='blue'), showlegend=False), row=2, col=2)
+        fig_secular_trends_2.add_trace(
+            go.Scatter(x=oil.index.to_list(), y=oil10.iloc[:, 0],
+                       mode="lines", line=dict(width=2, color='green'), showlegend=False), row=2, col=2)
 
         fig_secular_trends_2.update_layout(
             template="plotly_dark",
@@ -614,9 +653,8 @@ def trends(dropdown, date_start, date_end):
     elif dropdown == "Monetary Policy":
 
         PATH_DATA = "/Users/talbi/Downloads/"
-        wheat = pd.read_csv(cwd + "wheat.csv", index_col="Date")
-        wheat.index = pd.to_datetime(wheat.index)
-
+        wheat,_ = commo_smooth_data("wheat",date_start)
+        print(wheat)
         gas = pd.read_csv(cwd + "gas.csv", index_col="Date")
         gas.index = pd.to_datetime(gas.index)
 
