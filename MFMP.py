@@ -29,8 +29,7 @@ base[non_spread_assets] = base[non_spread_assets] - libor.values / 12
 Turb_index = Turbulence_Index(base)
 
 # Calcul du facteur de Financial Stress
-macro['Financial Stress'] = (
-            (macro['Financial Stress'].values + Turb_index.ix[:np.shape(Turb_index)[0] - 13, 0]) / 2).values
+macro['Financial Stress'] = ((macro['Financial Stress'].values + Turb_index.loc[:np.shape(Turb_index)[0] - 13, 0]) / 2).values
 
 ### Z-score sur les données macros ###
 macro = (macro - macro.mean()) / (macro.std() * 100)
@@ -271,6 +270,7 @@ plt.plot(dates, FMP_Estim['Inflation surprises'], label='IS GFMP')
 plt.legend(loc='best')
 plt.show()
 
+"""
 # PARTIE 5.1
 MoMandValue = pd.read_excel('MomentumAndValue.xlsx', index_col=0)
 MoMandValue = MoMandValue.set_index(facteurs.index)
@@ -488,3 +488,4 @@ plt.plot(Max_DD_April.index, Max_DD_April['Macro-Hedged Portfolio'], label='Macr
 plt.legend(loc='lower left')
 plt.show()
 
+"""

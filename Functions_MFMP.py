@@ -26,11 +26,11 @@ def Turbulence_Index(Data):
 def par_corr(Data):
     C = np.asarray(Data)
     p = C.shape[1]
-    P_corr = np.zeros((p, p), dtype=np.float)
+    P_corr = np.zeros((p, p), dtype=np.cfloat)
     for i in range(p):
         P_corr[i, i] = 1
         for j in range(i + 1, p):
-            idx = np.ones(p, dtype=np.bool)
+            idx = np.ones(p, dtype=np.bool_)
             idx[i] = False
             idx[j] = False
             beta_i = linalg.lstsq(C[:, idx], C[:, j])[0]
