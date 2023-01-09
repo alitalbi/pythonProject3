@@ -684,16 +684,39 @@ def trends(dropdown, date_start, date_end):
 
         # cooper_norm = (spread - np.mean(spread)) / np.std(spread)
         cooper_norm = (cooper_prices - np.mean(cooper_prices)) / np.std(cooper_prices)
-
-        merged_data_norm = pd.concat([spread_norm, cooper_norm], axis=1)
-        merged_data_norm.columns = ["spread normalized", "cooper normalized"]
-        merged_data_norm.dropna(inplace=True)
+        spread_cooper_diff = spread_norm-cooper_norm
+        spread_cooper_diff.columns = ["30y_5y_spread - Cooper (normalized)"]
+        #merged_data_norm = pd.concat([spread_norm, cooper_norm], axis=1)
+        #merged_data_norm.columns = ["spread normalized", "cooper normalized"]
+        spread_cooper_diff.dropna(inplace=True)
         # plt.plot(cooper.index.to_list(),cooper[['Close']])
+        merged = pd.concat([cooper_prices, spread, _5y_nominal], axis=1)
+        merged.columns = ["cooper", "spread_30y_5y", "5y_nominal"]
+        merged.dropna(inplace=True)
+        average = merged.rolling(90).mean()
+        # Calculate the annualized growth rate
+        annualized_6m_smoothed_growth_rate = ( (merged[90:] / average)**(365/90) - 1 ) * 100
+
+        annualized_6m_smoothed_growth_rate.dropna(inplace=True)
+        for col in annualized_6m_smoothed_growth_rate.columns:
+            annualized_6m_smoothed_growth_rate[col + "_dummy"] = np.where(annualized_6m_smoothed_growth_rate[col] > 0,
+                                                                          1, 0)
+
+        annualized_6m_smoothed_growth_rate['regimes_cooper_spread'] = annualized_6m_smoothed_growth_rate[
+            ['cooper_dummy', "spread_30y_5y_dummy"]].sum(axis=1)
+
+        regimes_5y_nominal = annualized_6m_smoothed_growth_rate[["regimes_cooper_spread", "5y_nominal_dummy"]]
+        print("hi")
 
 
-        fig_brainard = make_subplots(cols=1, rows=2, specs=[[{"secondary_y": True}], [{"secondary_y": True}]],
-                                     subplot_titles=["Levels", "Returns"],shared_xaxes=True)
+        fig_brainard = make_subplots(cols=1, rows=3, specs=[[{"secondary_y": True}], [{"secondary_y": True}],[{"secondary_y": True}]],
+                                     subplot_titles=["Levels", "Returns","Regimes 1m annualized growth cooper and spread30y_5y vs "])
 
+
+
+        fig_brainard.add_trace(
+            go.Scatter(x=spread_cooper_diff.index.to_list(), y=spread_cooper_diff.iloc[:, 0], name="30y_5y_spread - Cooper (normalized)",
+                       mode="lines", line=dict(width=2, color='blue')), secondary_y=False, col=1, row=1)
         fig_brainard.add_trace(
             go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 0], name="Spread",
                        mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=1)
@@ -712,20 +735,29 @@ def trends(dropdown, date_start, date_end):
         merged_.dropna(inplace=True)
         merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
         fig_brainard.add_trace(
-            go.Scatter(x=merged_.index.to_list(), y=merged_["spread 30_5yr"], name="Spread 30-5y",
+            go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["spread_30y_5y"], name="Spread 30-5y",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), secondary_y=False, col=1,
             row=2)
-        fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["5y"], name="US 5y",
+        fig_brainard.add_trace(go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["5y_nominal"], name="US 5y",
                                           mode="lines", line=dict(width=2, color='purple'), showlegend=False),
                                secondary_y=False, col=1,
                                row=2)
-        fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["cooper"], name="Cooper prices",
+        fig_brainard.add_trace(go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["cooper"], name="Cooper prices",
                                           mode="lines", line=dict(width=2, color='orange'), showlegend=False),
                                secondary_y=True, col=1, row=2)
         fig_brainard.add_trace(
             go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
                        mode="lines", line=dict(width=2, color='red'), showlegend=True), secondary_y=True,
             col=1, row=1)
+        fig_brainard.add_trace(
+            go.Scatter(x=regimes_5y_nominal.index.to_list(), y=regimes_5y_nominal.iloc[:,0],
+                       name="regimes_cooper_spread",
+                       mode="lines", line=dict(width=2, color='orange')), secondary_y=False, col=1, row=3)
+
+        fig_brainard.add_trace(
+            go.Scatter(x=regimes_5y_nominal.index.to_list(), y=regimes_5y_nominal.iloc[:,1],
+                       name="5y_nominal_dummy",
+                       mode="lines", line=dict(width=2, color='purple')), secondary_y=True, col=1, row=3)
         fig_brainard.update_layout(
             template="plotly_dark",
             title={
@@ -746,8 +778,7 @@ def trends(dropdown, date_start, date_end):
             )
         )
         fig_brainard.update_layout(height=1000, width=1500)
-        fig_brainard.update_layout(
-            xaxis=dict(rangeslider=dict(visible=True)))
+
         return dcc.Graph(figure=fig_brainard)
 
 
