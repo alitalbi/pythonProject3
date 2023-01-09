@@ -75,28 +75,28 @@ PATH_DATA = "/Users/talbi/Downloads/"
 def export_yfinance_data(date_start,date_end):
 
     #30y nominal
-    _30y = yf.download("^TYX", start=date_start, end=date_end, interval="1d")[['Close']]
+    _30y = yf.download("^TYX", start=date_start, end=date_end, interval="1mo")[['Close']]
     _30y.to_csv(cwd+"_30y.csv")
 
     #5y nominal
-    _5y_nominal = yf.download("^FVX", start=date_start, end=date_end, interval="1d")[['Close']]
+    _5y_nominal = yf.download("^FVX", start=date_start, end=date_end, interval="1mo")[['Close']]
     _5y_nominal.to_csv(cwd+"_5y_nominal.csv")
 
     #Cooper
-    cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1d")[['Close']]
+    cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
     cooper_prices = cooper * 100
     cooper_prices.to_csv(cwd+"cooper_prices.csv")
 
     #Wheat
-    wheat = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1d")[['Close']]
+    wheat = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1mo")[['Close']]
     wheat.to_csv("wheat.csv")
 
     #Oil
-    oil = yf.download("CL=F", start=date_start, end=date_end, interval="1d")[['Close']]
+    oil = yf.download("CL=F", start=date_start, end=date_end, interval="1mo")[['Close']]
     oil.to_csv("oil.csv")
 
     #Gas
-    gas = yf.download("NG=F", start=date_start, end=date_end, interval="1d")[['Close']]
+    gas = yf.download("NG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
     gas.to_csv("gas.csv")
 
     return 0
