@@ -26,8 +26,12 @@ def smooth_data(internal_ticker, date_start, date_start2, date_end):
 
 
     data_2 = pd.read_csv(internal_ticker+"10.csv",index_col="Unnamed: 0")
+    today = pd.datetime.today()
+    ten_years_ago = today - pd.offsets.DateOffset(years=10)
+
     data_2.index = pd.to_datetime(data_2.index)
     data_2 = data_2.loc[(data_2.index >date_start2) & (data_2.index <date_end)]
+
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
     average =  data_.iloc[:, 0].rolling(11).mean()
@@ -37,7 +41,7 @@ def smooth_data(internal_ticker, date_start, date_start2, date_end):
 
     # Multiply the result by 100 and store it in the _6m_smoothing_growth column
     data_['_6m_smoothing_growth'] = 100*annualized_6m_smoothed_growth_rate
-    data_2['mom_average'] = 100*data_2.iloc[:, 0].pct_change(periods=1)
+    data_2['mom_average'] = 1000*data_2.iloc[:, 0].pct_change(periods=1)
     data_2['10 yr average'] = data_2['mom_average'].rolling(100).mean()
     data_.dropna(inplace=True)
     data_2.dropna(inplace=True)
@@ -59,7 +63,7 @@ def score_table(index, data_, data_10):
 # Parameters for the request from the FRED Website
 
 
-
+now = datetime.datetime.now().strftime("%Y-%m-%d")
 frequency_ = 'monthly'
 
 external_stylesheets = [
@@ -90,10 +94,11 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
        # active_tab="Macroeconomic Indicators",
     ),
 
+
     html.H1("Economic Framework (Talbi & Co)", style={"margin-left": "550px", "color": "white"}),
     html.Br(),
     html.Div([dcc.Input("2021-01-01", placeholder="start date", id="date_start"),
-              dcc.Input("2023-01-01", placeholder="end date", id="date_end")], style={'margin-left': '650px'}),
+              dcc.Input(now, placeholder="end date", id="date_end")], style={'margin-left': '650px'}),
     html.Div(id="graph_indicator", style={'margin-left': '100px'}),
 
     # html.Div(,style={"margin-top":"10px"}),
@@ -102,22 +107,22 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
         dcc.Dropdown(
             id='dropdown',
             options=[
-                {'label': 'brainard_test', 'value': 'brainard_test'},
+                {'label': 'Monetary Policy', 'value': 'Monetary Policy'},
                 {'label': 'Growth', 'value': 'Growth'},
                 {'label': 'Inflation Outlook', 'value': 'Inflation Outlook'},
             ],
             value='Growth',
             style={
-                "width": "180px",
-                "font-size": "16px",
+                "width": "140px",
+                "font-size": "14px",
                 "padding": "10px",
                 "border-radius": "5px",
-                "border": "1px solid white",
-                "background-color": "rgb(17,17,17)",
+            #    "border": "1px solid white",
+                "background-color": "white",
                 "color": "#000000"
             }
         ),
-        style={"width": "150px", "margin-left": "120px"}
+        style={"width": "140px", "margin-left": "120px","color":"white"}
     ),
     html.Div(id="trends_graphs", style={"margin-left": "100px"})
 ])
@@ -511,7 +516,7 @@ def trends(dropdown, date_start, date_end):
         fig_secular_trends_2.update_layout(
             template="plotly_dark",
             title={
-                'text': "Commodities prices",
+                'text': "Inflation Outlook",
                 'y': 0.9,
                 'x': 0.5,
                 'xanchor': 'center',
@@ -593,7 +598,7 @@ def trends(dropdown, date_start, date_end):
                                                              'whiteSpace': 'normal', 'height': 'auto'}),
                             style={"margin-left": "450px"}), \
                 dcc.Graph(figure=fig_secular_trends_2), dcc.Graph(figure=fig_secular_trends)
-    elif dropdown == "brainard_test":
+    elif dropdown == "Monetary Policy":
 
         PATH_DATA = "/Users/talbi/Downloads/"
         wheat = pd.read_csv(cwd + "wheat.csv", index_col="Date")
@@ -647,16 +652,7 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 2], name="Cooper prices",
                                           mode="lines", line=dict(width=2, color='orange')), secondary_y=True, col=1,
                                row=1)
-        fig_brainard.add_trace(
-            go.Scatter(x=merged_data_norm.index.to_list(), y=merged_data_norm['spread normalized'],
-                       name="spread normalized",
-                       mode="lines", line=dict(width=2, color='green'), showlegend=True), secondary_y=True,
-            col=1, row=1)
-        fig_brainard.add_trace(
-            go.Scatter(x=merged_data_norm.index.to_list(), y=merged_data_norm['cooper normalized'],
-                       name="cooper normalizd",
-                       mode="lines", line=dict(width=2, color='blue'), showlegend=True), secondary_y=True,
-            col=1, row=1)
+
         merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].diff())
         merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].diff())
         merged_data_cooper_ret = pd.DataFrame(merged_data.iloc[:, 2].pct_change())
@@ -687,7 +683,7 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.update_layout(
             template="plotly_dark",
             title={
-                'text': "BRAINARD",
+                'text': "Monetary Policy",
                 'y': 1,
                 'x': 0.5,
                 'xanchor': 'center',
