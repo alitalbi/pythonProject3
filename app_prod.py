@@ -130,6 +130,7 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
         dcc.Dropdown(
             id='dropdown',
             options=[
+                {'label': 'Macro Factor-Mimicking Portfolios', 'value': 'Macro Factor-Mimicking Portfolios'},
                 {'label': 'Monetary Policy', 'value': 'Monetary Policy'},
                 {'label': 'Growth', 'value': 'Growth'},
                 {'label': 'Inflation Outlook', 'value': 'Inflation Outlook'},
@@ -780,10 +781,67 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.update_layout(height=1000, width=1500)
 
         return dcc.Graph(figure=fig_brainard)
+    elif dropdown == "Macro Factor-Mimicking Portfolios":
+        observed_infla_growth_stress = pd.read_csv(cwd+"observed_infla_growth_stress.csv",index_col="Date")
+        FMP_estimation_infla_growth_stress = pd.read_csv(cwd + "FMP_estimation_infla_growth_stress.csv", index_col="Date")
+
+        fig_mimicking = make_subplots(rows=3, cols=1, subplot_titles=["Growth", "Inflation", "Financial Stress"])
+
+        fig_mimicking.add_trace(
+            go.Scatter(x=observed_infla_growth_stress.index.to_list(), y=observed_infla_growth_stress["Growth"],
+                       name="Observed",
+                       mode="lines", line=dict(width=2, color='blue')), col=1, row=1)
+
+        fig_mimicking.add_trace(
+            go.Scatter(x=FMP_estimation_infla_growth_stress.index.to_list(), y=FMP_estimation_infla_growth_stress["Growth"],
+                       name="FMP Est.",
+                       mode="markers", line=dict(width=2, color='red')), col=1, row=1)
+
+        fig_mimicking.add_trace(
+            go.Scatter(x=observed_infla_growth_stress.index.to_list(),
+                       y=observed_infla_growth_stress["Inflation surprises"],
+                       name="Observed",
+                       mode="lines", line=dict(width=2, color='blue'),showlegend=False), col=1, row=2)
+        fig_mimicking.add_trace(
+            go.Scatter(x=FMP_estimation_infla_growth_stress.index.to_list(),
+                       y=FMP_estimation_infla_growth_stress["Inflation surprises"],
+                       name="FMP Est.",
+                       mode="markers", line=dict(width=2, color='red'),showlegend=False), col=1, row=2)
+
+        fig_mimicking.add_trace(
+            go.Scatter(x=observed_infla_growth_stress.index.to_list(),
+                       y=observed_infla_growth_stress["Financial Stress"],
+                       name="Observed",
+                       mode="lines", line=dict(width=2, color='blue'),showlegend=False), col=1, row=3)
+        fig_mimicking.add_trace(
+            go.Scatter(x=FMP_estimation_infla_growth_stress.index.to_list(),
+                       y=FMP_estimation_infla_growth_stress["Financial Stress"],
+                       name="FMP Est.",
+                       mode="markers", line=dict(width=2, color='red'),showlegend=False), col=1, row=3)
 
 
+        fig_mimicking.update_layout(
+            template="plotly_dark",
+            title={
+                'text': "Macro Factor-Mimicking Portfolios",
+                'y': 1,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'})
 
+        fig_mimicking.update_layout(  # customize font and legend orientation & position
 
+            title_font_family="Arial Black",
+            font=dict(
+                family="Rockwell",
+                size=16),
+            legend=dict(
+                title=None, orientation="h", y=1, yanchor="bottom", x=0.5, xanchor="center"
+            )
+        )
+        fig_mimicking.update_layout(height=1000, width=1500)
+
+        return dcc.Graph(figure=fig_mimicking)
 #   except ValueError:
 # pass
 if __name__ == "__main__":
