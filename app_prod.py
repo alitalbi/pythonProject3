@@ -205,6 +205,7 @@ def trends(dropdown, date_start, date_end):
                                   y=composite_growth_10['10 yr average'] / 100,
                                   name="10 YR average",
                                   mode="lines", line=dict(width=2, color='green')))
+
         fig_.update_layout(
             template="plotly_dark",
             title={
@@ -230,7 +231,16 @@ def trends(dropdown, date_start, date_end):
                 title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
             ),
         )
+        fig_.update_layout(
+            xaxis=dict(
 
+                rangeslider=dict(
+                    visible=True
+                ),
+                type="date"
+            )
+        )
+        fig_.update_layout(xaxis=dict(rangeselector=dict(font=dict(color="black"))))
         fig_cyclical_trends = make_subplots(rows=3, cols=2, subplot_titles=[pce_title, indpro_title
             , nonfarm_title, real_personal_income_title, retail_sales_title, employment_level_title])
 
@@ -297,6 +307,9 @@ def trends(dropdown, date_start, date_end):
                 title=None, orientation="h", y=1.02, yanchor="bottom", x=0.5, xanchor="center"
             )
         )
+        fig_cyclical_trends.layout.sliders = [dict(visible=True)]
+
+
         fig_cyclical_trends.layout.yaxis2.tickformat = ".2%"
         fig_cyclical_trends.layout.yaxis3.tickformat = ".2%"
         fig_cyclical_trends.layout.yaxis4.tickformat = ".2%"
