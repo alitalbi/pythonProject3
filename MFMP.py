@@ -10,13 +10,16 @@ import numpy as np
 from Functions_MFMP import *
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import os
 
+
+cwd = os.getcwd() +"/"
 ########## Importation des données et retraitements ##########
 
 ### Import des séries du fichiers ###
-base = pd.read_excel('DATA_REPLICATION.xlsx', 'Base', index_col=0)
-macro = pd.read_excel('DATA_REPLICATION.xlsx', 'Macro', index_col=0)
-libor = pd.read_excel('DATA_REPLICATION.xlsx', 'Libor', index_col=0)
+base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+macro = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Macro', index_col=0)
+libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
 
 ### Excess returns over USD Libor 1 month for non spread base assets ###
 non_spread_assets = ['WEQ', 'GLT', 'GOLD', 'INM', 'ENG', 'DXY']
