@@ -74,7 +74,7 @@ def smooth_data(internal_ticker, date_start, date_start2, date_end):
 def score_table(index, data_, data_10):
     score_table = pd.DataFrame.from_dict({"trend vs history ": 1 if data_.iloc[-1, 0] > data_10.iloc[-1, 0] else 0,
                                           "growth": 1 if data_.iloc[-1, 0] > 0 else 0,
-                                          "Direction of Trend": 1 if (data_.resample("3M").last().diff()).iloc[-1][
+                                          "Direction of Trend": 1 if data_.diff().iloc[-1][
                                                                          0] > 0 else 0}, orient="index").T
     score_table['Score'] = score_table.sum(axis=1)
     score_table['Indicators'] = index
