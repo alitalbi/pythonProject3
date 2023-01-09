@@ -19,37 +19,35 @@ from sklearn.model_selection import train_test_split
 
 def commo_smooth_data(internal_ticker, date_start,date_end):
     data_ = pd.read_csv(internal_ticker + ".csv", index_col="Date")
-    data_.index = pd.to_datetime(data_.index)
-    data_ = data_.loc[date_start:]
 
+    data_ = data_.loc[date_start:]
+    data_.index = pd.to_datetime(data_.index)
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
-    average = data_.iloc[:, 0].rolling(30).mean()
+    average = data_.iloc[:, 0].rolling(180).mean()
 
     # Calculate the annualized growth rate
-    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][30:] / average) ** (365 / 180) - 1
+    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][180:] / average) ** (365 / 180) - 1
 
     # Multiply the result by 100 and store it in the _6m_smoothing_growth column
-    data_['_1m_smoothing_growth'] = 100 * annualized_6m_smoothed_growth_rate
-    mom_average = data_.iloc[:, 0].pct_change(periods=1)
-    data_['100 day average growth rate'] = mom_average.rolling(100).mean() * 100
+    data_['_6m_smoothing_growth'] = 100 * annualized_6m_smoothed_growth_rate
+    mom_average = data_.iloc[:, 0].pct_change(periods=365)
+    data_['10 yr average growth rate'] = mom_average.rolling(10).mean() * 100
     data_.dropna(inplace=True)
-    return data_[['_1m_smoothing_growth']], data_[['100 day average growth rate']]
+    return data_[['_6m_smoothing_growth']], data_[['10 yr average growth rate']]
 
 def smooth_data(internal_ticker, date_start, date_start2, date_end):
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
-    data_.index = pd.to_datetime(data_.index)
-    data_= data_.loc[(data_.index >date_start) & (data_.index <date_end)]
 
+    data_= data_.loc[(data_.index >date_start) & (data_.index <date_end)]
+    data_.index = pd.to_datetime(data_.index)
 
 
     data_2 = pd.read_csv(internal_ticker+"10.csv",index_col="Unnamed: 0")
-    today = pd.datetime.today()
-    ten_years_ago = today - pd.offsets.DateOffset(years=10)
 
-    data_2.index = pd.to_datetime(data_2.index)
+
     data_2 = data_2.loc[(data_2.index >date_start2) & (data_2.index <date_end)]
-
+    data_2.index = pd.to_datetime(data_2.index)
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
     average =  data_.iloc[:, 0].rolling(11).mean()
@@ -152,6 +150,7 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
                Input("date_start", "value"),
                Input("date_end", "value")])
 def trends(dropdown, date_start, date_end):
+
     if len(date_start) != 10 and len(date_end) != 10:
         date_start = "2021-01-01"
         date_end = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -540,24 +539,24 @@ def trends(dropdown, date_start, date_end):
 
         fig_secular_trends_2 = make_subplots(rows=2, cols=2)
 
-        fig_secular_trends_2.add_trace(go.Scatter(x=wheat.index.to_list(), y=wheat.iloc[:,0]/100, name="Wheat 1m annualized growth",
+        fig_secular_trends_2.add_trace(go.Scatter(x=wheat.index.to_list(), y=wheat.iloc[:,0]/100, name="Wheat 6m annualized growth",
                                                   mode="lines", line=dict(width=2, color='white')), row=1, col=1)
         fig_secular_trends_2.add_trace(
-            go.Scatter(x=wheat.index.to_list(), y=wheat10.iloc[:, 0]/100, name="Wheat 100d average growth rate",
+            go.Scatter(x=wheat.index.to_list(), y=wheat10.iloc[:, 0]/100, name="10 YR average growth rate",
                        mode="lines", line=dict(width=2, color='green'),showlegend=True), row=1, col=1)
         fig_secular_trends_2.add_trace(
-            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices.iloc[:,0]/100, name="Cooper 1m annualized growth",
+            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices.iloc[:,0]/100, name="Cooper 6m annualized growth",
                        mode="lines", line=dict(width=2, color='orange')), row=1, col=2)
         fig_secular_trends_2.add_trace(
-            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices10.iloc[:, 0]/100, name="Cooper 100d average growth rate",
+            go.Scatter(x=cooper_prices.index.to_list(), y=cooper_prices10.iloc[:, 0]/100, name="Cooper 10YR average growth rate",
                        mode="lines", line=dict(width=2, color='green'), showlegend=False), row=1, col=2)
-        fig_secular_trends_2.add_trace(go.Scatter(x=gas.index.to_list(), y=gas.iloc[:,0]/100, name="Gas 1m annualized growth",
+        fig_secular_trends_2.add_trace(go.Scatter(x=gas.index.to_list(), y=gas.iloc[:,0]/100, name="Gas 6m annualized growth",
                                                   mode="lines", line=dict(width=2, color='purple')), row=2, col=1)
         fig_secular_trends_2.add_trace(
             go.Scatter(x=gas.index.to_list(), y=gas10.iloc[:, 0]/100,
                        mode="lines", line=dict(width=2, color='green'), showlegend=False), row=2, col=1)
 
-        fig_secular_trends_2.add_trace(go.Scatter(x=oil.index.to_list(), y=oil.iloc[:,0]/100, name="Oil 1m annualized growth",
+        fig_secular_trends_2.add_trace(go.Scatter(x=oil.index.to_list(), y=oil.iloc[:,0]/100, name="Oil 6m annualized growth",
                                                   mode="lines", line=dict(width=2, color='blue'), showlegend=False), row=2, col=2)
         fig_secular_trends_2.add_trace(
             go.Scatter(x=oil.index.to_list(), y=oil10.iloc[:, 0]/100,
@@ -653,7 +652,7 @@ def trends(dropdown, date_start, date_end):
     elif dropdown == "Monetary Policy":
 
         PATH_DATA = "/Users/talbi/Downloads/"
-        x
+        
 
         _30y = pd.read_csv(cwd + "_30y.csv", index_col="Date")
         _30y.index = pd.to_datetime(_30y.index)
@@ -751,7 +750,7 @@ def trends(dropdown, date_start, date_end):
 # pass
 if __name__ == "__main__":
     # host = socket.gethostbyname(socket.gethostname())
-    app.run_server(debug=True, port=8080)
+    app.run_server(debug=True, port=8050)
 
 
 
