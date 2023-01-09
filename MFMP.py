@@ -50,12 +50,12 @@ partial_corr = par_corr(macro)
 
 ########## Représentation graphique des séries macroéconomiques normalisées ##########
 graph_macro = macro.reset_index()
-plt.plot('Date', 'Growth', data=graph_macro)
-plt.show()
-plt.plot('Date', 'Inflation surprises', data=graph_macro)
-plt.show()
-plt.plot('Date', 'Financial Stress', data=graph_macro)
-plt.show()
+#plt.plot('Date', 'Growth', data=graph_macro)
+#plt.show()
+#plt.plot('Date', 'Inflation surprises', data=graph_macro)
+#plt.show()
+#plt.plot('Date', 'Financial Stress', data=graph_macro)
+#plt.show()
 ########## OLS Regression ##########
 
 ### Version capitalisée ###
@@ -238,12 +238,16 @@ GFMP_ML_Weights_Scaled = GFMP_ML_Weights / (GFMP_ML_Weights.std() * 100)
 dates = X_macro.reset_index()['Date']
 FMP_Estim = pd.DataFrame(np.dot(base_rolling, GFMP_ML_Weights_Scaled), columns=macro_factors, index=facteurs.index)
 
+facteurs.to_csv('observed_infla_growth_stress.csv')
+FMP_Estim.to_csv('FMP_estimation_infla_growth_stress.csv')
+
 ### Growth p.23 ###
+"""
 plt.title('Growth')
 plt.plot(dates, facteurs['Growth'], label='Observed')
 plt.plot(dates, FMP_Estim['Growth'], label='GFMP')
 plt.legend(loc='best')
-plt.show()
+plt.show()"""
 
 ### Inflation surprises p.23 ###
 plt.title('Inflation surprises')
@@ -265,10 +269,11 @@ plt.plot(dates, facteurs['Growth'], label='Growth Observed')
 plt.plot(dates, facteurs['Inflation surprises'], label='IS Observed')
 plt.legend(loc='best')
 plt.show()
+"""
 plt.plot(dates, FMP_Estim['Growth'], label='Growth GFMP')
 plt.plot(dates, FMP_Estim['Inflation surprises'], label='IS GFMP')
 plt.legend(loc='best')
-plt.show()
+plt.show()"""
 
 """
 # PARTIE 5.1
