@@ -88,28 +88,15 @@ if __name__=="__main__":
     #plt.show()
     import pandas as pd
 
-    # Use the `pandas_datareader` library to get data from the OECD API
-    import pandas_datareader.data as web
 
-    # Define the date range for the data
-    start_date = '2022-01-01'
-    end_date = '2022-12-31'
 
-    # Define the data source (in this case, the OECD API)
-    data_source = 'OECD'
+    file_name = "MEI_CLI_10012023142556508.csv"
 
-    # Define the inflation rate indicator
-    inflation_indicator = 'MEI_INFL'
+    PATH_DATA = r"/Users/talbi/Downloads/"
 
-    # Get the data
-    oecd_data = web.DataReader(inflation_indicator, data_source, start_date, end_date)
+    file = pd.read_csv(PATH_DATA + file_name)
 
-    # print the dataframe
-    print(oecd_data)
-
-    print("hi")
-
+    print(file)
     #fig_ =
 
 #acheter des bonds et augmenter les taux ? problème de liquidité sur la dette marocaine
-    #print(data_fred)
