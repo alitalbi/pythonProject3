@@ -122,6 +122,9 @@ CSR_Beta_PF = pd.DataFrame(np.array([CSR_Beta_Growth, CSR_Beta_IS, CSR_Beta_FS])
 ### Série de facteurs macros estimée ###
 CSR_macro = pd.DataFrame(np.dot(base_rolling, CSR_Weights), columns=macro_factors, index=facteurs.index)
 
+
+
+
 ### Corrélation partielle avec les facteurs observés
 CSR_par_corr = PF_par_corr(CSR_macro, facteurs, macro_factors)
 

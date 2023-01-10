@@ -82,10 +82,31 @@ def fred_data(ticker):
 
 
 if __name__=="__main__":
-    wheat,wheat10 = commo_smooth_data("cooper_prices",date_start,date_start2,date_end)
-    wheat.plot()
-    wheat10.plot()
-    plt.show()
+    #wheat,wheat10 = commo_smooth_data("cooper_prices",date_start,date_start2,date_end)
+    #wheat.plot()
+    #wheat10.plot()
+    #plt.show()
+    import pandas as pd
+
+    # Use the `pandas_datareader` library to get data from the OECD API
+    import pandas_datareader.data as web
+
+    # Define the date range for the data
+    start_date = '2022-01-01'
+    end_date = '2022-12-31'
+
+    # Define the data source (in this case, the OECD API)
+    data_source = 'OECD'
+
+    # Define the inflation rate indicator
+    inflation_indicator = 'MEI_INFL'
+
+    # Get the data
+    oecd_data = web.DataReader(inflation_indicator, data_source, start_date, end_date)
+
+    # print the dataframe
+    print(oecd_data)
+
     print("hi")
 
     #fig_ =
