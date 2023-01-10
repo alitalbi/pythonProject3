@@ -11,16 +11,22 @@ from Functions_MFMP import *
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import os
-
+from datetime import datetime
 
 cwd = os.getcwd() +"/"
 ########## Importation des données et retraitements ##########
-
+PATH_DATA = r"/Users/talbi/Downloads/"
+file_name = "MEI_CLI_10012023142556508.csv"
 ### Import des séries du fichiers ###
 base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
 macro = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Macro', index_col=0)
 libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
+growth = (pd.read_csv(PATH_DATA + file_name,index_col="TIME")[['Value']])
 
+growth.columns = ['Growth']
+growth.index = pd.to_datetime(pd.Series(growth.index.to_list()).apply(lambda x: datetime.strptime(x, "%Y-%m")))
+growth.sort_index(inplace=True)
+macro = growth
 ### Excess returns over USD Libor 1 month for non spread base assets ###
 non_spread_assets = ['WEQ', 'GLT', 'GOLD', 'INM', 'ENG', 'DXY']
 base[non_spread_assets] = base[non_spread_assets] - libor.values / 12

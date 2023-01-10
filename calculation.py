@@ -5,6 +5,7 @@ import wget
 import os
 #need openpyxl
 import matplotlib.pyplot as plt
+from datetime import datetime
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
@@ -13,12 +14,17 @@ from sklearn.svm import SVR
 import yfinance as yf
 import numpy as np
 # Parameters for the request from the FRED Website
+PATH_DATA = r"/Users/talbi/Downloads/"
 
-date_start = "2015-01-01"
-date_end = "2022-12-30"
-date_start2 = "2005-01-01"
+
+
 frequency = 'monthly'
-
+d= yf.download("LQD", start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]
+d.index = pd.to_datetime(d.index)
+d.to_excel(PATH_DATA+"LQD.xlsx")
+print(d)
+d.plot()
+plt.show()
 
 def commo_smooth_data(internal_ticker, date_start,date_start2,date_end):
     data_ = pd.read_csv(internal_ticker + ".csv", index_col="Date")
@@ -90,13 +96,53 @@ if __name__=="__main__":
 
 
 
-    file_name = "MEI_CLI_10012023142556508.csv"
-
+    cli = "MEI_CLI_10012023142556508.csv"
+    nfci = "nfci-data-series-csv.csv"
     PATH_DATA = r"/Users/talbi/Downloads/"
 
-    file = pd.read_csv(PATH_DATA + file_name)
+    growth_csv = (pd.read_csv(PATH_DATA + cli, index_col="TIME")[['Value']])
+    growth_csv.index = pd.to_datetime(growth_csv.index)
 
-    print(file)
+    nfci_csv = pd.read_csv(PATH_DATA + nfci,index_col="Friday_of_Week")['NFCI']
+    nfci_csv.index = pd.to_datetime(nfci_csv.index)
+    # National Financial Index (NFCI) :  https://www.chicagofed.org/research/data/nfci/current-data
+    nfci_csv =nfci_csv.loc[~nfci_csv.index.duplicated(keep='first')]
+
+    growth_csv.loc[~growth_csv.index.duplicated(keep='first')]
+
+    file2 = (pd.read_excel(PATH_DATA + "DATA_REPLICATION.xlsx",'Macro',index_col=0))['Growth'].iloc[::-1]
+
+    growth_resample =growth_csv.resample("1M").mean()
+    growth_resample.columns=["Growth"]
+    nfci_resample = nfci_csv.resample("1M").mean()
+
+    # libor_rates = http://iborate.com/usd-libor/
+    libor_us = pd.read_csv(PATH_DATA+"LIBOR USD.csv",index_col="Date")
+    libor_us.index = pd.to_datetime(libor_us.index)
+    libor_us_resample = libor_us.resample("1M").mean()
+    libor_us_resample.columns = ["1M_LIBOR_US"]
+
+    resample_ = pd.concat([growth_resample, nfci_resample,libor_us_resample], axis=1)
+    resample_.dropna(inplace=True)
+
+    #resample_['financial_stress']=(turb_index+ resample_['NFCI'])/2
+
+    MSCI_WORLD = yf.download("SWDA.MI", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+    barc_us_treasury = yf.download("USTY.DE", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+    _10y_nominal_us = yf.download("^TNX", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+    US_IG_bonds = yf.download("FBNDX", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+    #iShares $ TIPS 0-5 UCITS ETF USD (Dist) for inflation linked bonds
+    ilb = yf.download("TIP5.L", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+
+    #American Funds Inflation Linked Bond Fund
+    ilb_ = yf.download("BFIGX", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+
+    #gold
+    gold = yf.download("GC=F", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+
+    #SP GSCI industrial metal index
+    yf.download("^SPGSCI", start="1971-01-01", end=date_end, interval="1mo")[['Close']]
+    print("H")
     #fig_ =
 
 #acheter des bonds et augmenter les taux ? problème de liquidité sur la dette marocaine
