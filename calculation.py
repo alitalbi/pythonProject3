@@ -13,18 +13,46 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 import yfinance as yf
 import numpy as np
+import statsmodels.api as sm
+
+
 # Parameters for the request from the FRED Website
 PATH_DATA = r"/Users/talbi/Downloads/"
+date_end="2022-30-12"
+def analyze_proxy_single_data(main_data,proxy):
+
+    transformed_main_data = 100 * (main_data / main_data.shift(1))
+    transformed_proxy_data = 100 * (proxy / proxy.shift(1))
+
+    return_main_data = transformed_main_data/transformed_main_data.shift(1)
+    return_proxy_data = transformed_proxy_data/transformed_proxy_data.shift(1)
+    return_main_data.dropna(inplace=True)
+    return_proxy_data.dropna(inplace=True)
+    Y = return_main_data
+    X = return_proxy_data
+    model = sm.OLS(Y, X/2)
+    print("Correl : ",Y.corr(X),"Beta : ",model.fit().params.values)
 
 
 
-frequency = 'monthly'
-d= yf.download("LQD", start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]
-d.index = pd.to_datetime(d.index)
-d.to_excel(PATH_DATA+"LQD.xlsx")
-print(d)
-d.plot()
-plt.show()
+proxy = yf.download("LQD", start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]
+
+file2 = (pd.read_excel(PATH_DATA + "DATA_REPLICATION.xlsx",'Base',index_col=0))['ILB'].iloc[::-1]*100+100
+file2.index = pd.Series(file2.index.to_list()).apply(lambda x:x.replace(day=1))
+merged = pd.concat([file2,proxy],axis=1)
+merged.dropna(inplace=True)
+res = analyze_proxy_single_data(merged.iloc[:,0],merged.iloc[:,0])
+print("hi")
+def yfinance_plot_data(ticker):
+    d = yf.download(ticker, start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]
+    d.index = pd.to_datetime(d.index)
+    print(d)
+    d.plot()
+    plt.show()
+
+#yfinance_plot_data("NG=F")
+
+
 
 def commo_smooth_data(internal_ticker, date_start,date_start2,date_end):
     data_ = pd.read_csv(internal_ticker + ".csv", index_col="Date")
