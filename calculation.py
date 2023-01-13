@@ -1,11 +1,15 @@
 from fredapi import Fred
+import calendar
+
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import wget
 import os
+import sys
 #need openpyxl
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime,date
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
@@ -19,29 +23,64 @@ import statsmodels.api as sm
 # Parameters for the request from the FRED Website
 PATH_DATA = r"/Users/talbi/Downloads/"
 date_end="2022-30-12"
-def analyze_proxy_single_data(main_data,proxy):
+
+def analyze_proxy_single_data(main_data_base_ticker,proxy_ticker):
+    proxy = yf.download(proxy_ticker, start="1971-01-01", end="2023-01-10", interval="1mo")[['Close']]
+
+    file2 = (pd.read_excel(PATH_DATA + "DATA_REPLICATION.xlsx", 'Base', index_col=0))[main_data_base_ticker].iloc[::-1] * 100 + 100
+    file2.index = pd.Series(file2.index.to_list()).apply(lambda x: (x.replace(day=1)))
+    merged = pd.concat([file2, proxy], axis=1)
+    merged.dropna(inplace=True)
+    main_data=merged.iloc[:,0]
+    proxy = merged.iloc[:, 1]
 
     transformed_main_data = 100 * (main_data / main_data.shift(1))
     transformed_proxy_data = 100 * (proxy / proxy.shift(1))
 
-    return_main_data = transformed_main_data/transformed_main_data.shift(1)
-    return_proxy_data = transformed_proxy_data/transformed_proxy_data.shift(1)
+    return_main_data = transformed_main_data
+    return_proxy_data = transformed_proxy_data
+    m = 100 * (merged / merged.shift(1))
+    #m = 100 * (merged / merged.shift(1))
+    #m.plot()
+    #plt.show()
     return_main_data.dropna(inplace=True)
     return_proxy_data.dropna(inplace=True)
     Y = return_main_data
     X = return_proxy_data
-    model = sm.OLS(Y, X/2)
-    print("Correl : ",Y.corr(X),"Beta : ",model.fit().params.values)
+    model = sm.OLS(Y, X)
+    print("Between ",main_data_base_ticker," and ",proxy_ticker," => Correl : ",Y.corr(X),"& Beta : ",model.fit().params.values)
+
+    return 0
+def func_merged_data():
+    l = ["SWDA.MI","TLT","LQD","TIP5.L","GC=F","XLB","IYE","DX-Y.NYB","FXC"]
+    base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB FXC", start="1971-01-01", end="2023-01-10",
+                interval="1mo")[['Adj Close']]
+    base = (base / base.shift(1))-1
+    base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
+    libor_us = pd.read_csv(PATH_DATA + "LIBOR USD.csv", index_col="Date")
+    libor_us.index = pd.to_datetime(libor_us.index)
+    libor_us = libor_us.resample("1M").mean()
+    libor_us.index = pd.Series(libor_us.index.to_list()).apply(lambda x: (x.replace(day=1)))
+    base.dropna(inplace=True)
+
+    lib_merged_data = pd.concat([libor_us, base], axis=1)
+    lib_merged_data.dropna(inplace=True)
+    libor = lib_merged_data["1M"]
+    base = lib_merged_data.drop("1M",axis=1,inplace=True)
+    return libor,base
+analyze_proxy_single_data("WEQ","SWDA.MI")#MSCI WORLD
+analyze_proxy_single_data("GLT","TLT")#10y trasury
+analyze_proxy_single_data("CRE","LQD")#iShares iBoxx $ Investment Grade Corporate Bond ETF
+analyze_proxy_single_data("ILB","TIP5.L")#iShares $ TIPS 0-5 UCITS ETF USD (Dist) (TIP5.L)
+analyze_proxy_single_data("GOLD","GC=F")#Gold
+analyze_proxy_single_data("INM","XLB")#Materials Select Sector SPDR Fund
+analyze_proxy_single_data("ENG","IYE")#Energy commodity
+analyze_proxy_single_data("DXY","DX-Y.NYB")#dollar
+analyze_proxy_single_data("FXCS","FXC")#Invesco CurrencyShares Canadian Dollar Trust
 
 
-
-proxy = yf.download("LQD", start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]
-
-file2 = (pd.read_excel(PATH_DATA + "DATA_REPLICATION.xlsx",'Base',index_col=0))['ILB'].iloc[::-1]*100+100
-file2.index = pd.Series(file2.index.to_list()).apply(lambda x:x.replace(day=1))
-merged = pd.concat([file2,proxy],axis=1)
-merged.dropna(inplace=True)
-res = analyze_proxy_single_data(merged.iloc[:,0],merged.iloc[:,0])
+func_merged_data()
+sys.exit()
 print("hi")
 def yfinance_plot_data(ticker):
     d = yf.download(ticker, start="1971-01-01", end="2018-06-29", interval="1mo")[['Adj Close']]

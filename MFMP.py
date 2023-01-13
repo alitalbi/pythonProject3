@@ -4,7 +4,8 @@ Created on Mon Apr 20 15:36:22 2020
 
 @author: nicol_000
 """
-
+import yfinance as yf
+import sys
 import pandas as pd
 import numpy as np
 from Functions_MFMP import *
@@ -19,6 +20,26 @@ PATH_DATA = r"/Users/talbi/Downloads/"
 file_name = "MEI_CLI_10012023142556508.csv"
 ### Import des séries du fichiers ###
 base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+
+
+def func_merged_data():
+    l = ["SWDA.MI","TLT","LQD","TIP5.L","GC=F","XLB","IYE","DX-Y.NYB","FXC"]
+    base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB FXC", start="1971-01-01", end="2023-01-10",
+                interval="1mo")[['Adj Close']]
+    base = (base / base.shift(1))-1
+    base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
+    libor_us = pd.read_csv(PATH_DATA + "LIBOR USD.csv", index_col="Date")
+    libor_us.index = pd.to_datetime(libor_us.index)
+    libor_us = libor_us.resample("1M").mean()
+    libor_us.index = pd.Series(libor_us.index.to_list()).apply(lambda x: (x.replace(day=1)))
+    base.dropna(inplace=True)
+
+    lib_merged_data = pd.concat([libor_us, base], axis=1)
+    lib_merged_data.dropna(inplace=True)
+    libor = lib_merged_data[["1M"]]
+    base = lib_merged_data.drop("1M",axis=1)
+    return libor,base
+libor_,base_ = func_merged_data()
 macro = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Macro', index_col=0)
 libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
 growth = (pd.read_csv(PATH_DATA + file_name,index_col="TIME")[['Value']])
@@ -26,11 +47,11 @@ growth = (pd.read_csv(PATH_DATA + file_name,index_col="TIME")[['Value']])
 growth.columns = ['Growth']
 growth.index = pd.to_datetime(pd.Series(growth.index.to_list()).apply(lambda x: datetime.strptime(x, "%Y-%m")))
 growth.sort_index(inplace=True)
-macro = growth
+#macro = growth
 ### Excess returns over USD Libor 1 month for non spread base assets ###
 non_spread_assets = ['WEQ', 'GLT', 'GOLD', 'INM', 'ENG', 'DXY']
 base[non_spread_assets] = base[non_spread_assets] - libor.values / 12
-
+base_[non_spread_assets] = base_[non_spread_assets] - libor_.values / 12
 ### Turbulence Index by Chow ###
 Turb_index = Turbulence_Index(base)
 
@@ -68,6 +89,8 @@ graph_macro = macro.reset_index()
 base_capi = np.cumprod(1 + base.iloc[::-1]).iloc[::-1]
 base_rolling = (base_capi / base_capi.shift(-12) - 1)[:-12:]
 
+base_capi_ = np.cumprod(1 + base_.iloc[::-1]).iloc[::-1]
+base_rolling_ = (base_capi_ / base_capi_.shift(-12) - 1)[:-12:]
 ### Version sommée ###
 base_s_rolling = base.iloc[::-1].rolling(12).sum().iloc[::-1][:-12:]
 
@@ -129,7 +152,39 @@ CSR_Beta_PF = pd.DataFrame(np.array([CSR_Beta_Growth, CSR_Beta_IS, CSR_Beta_FS])
 CSR_macro = pd.DataFrame(np.dot(base_rolling, CSR_Weights), columns=macro_factors, index=facteurs.index)
 
 
+print("hi")
 
+dates = X_macro.reset_index()['Date']
+CSR_Estim = pd.DataFrame(np.dot(base_rolling_, CSR_Weights_Scaled), columns=macro_factors, index=base_rolling_.index)
+### Inflation surprises p.23 ###
+accuracy = (np.abs(facteurs['Inflation surprises'] - CSR_Estim['Inflation surprises'])).mean()
+plt.title('Inflation surprises, CSR Mean Squared Error : '+str(accuracy))
+plt.plot(dates, facteurs['Inflation surprises'], label='Observed Inflation')
+plt.plot(base_rolling_.index, CSR_Estim['Inflation surprises'], label='CSR Inflation')
+plt.legend(loc='best')
+#plt.show()
+### Financial Stress p.23 ###
+accuracy = (np.abs(facteurs['Financial Stress'] - CSR_Estim['Financial Stress'])).mean()
+plt.title('Financial Stress, CSR Mean Squared Error : '+str(accuracy))
+plt.plot(dates, facteurs['Financial Stress'], label='Observed Financial')
+plt.plot(base_rolling_.index, CSR_Estim['Financial Stress'], label='CSR Financial')
+plt.legend(loc='best')
+#plt.show()
+### Growth & Inflation surprises combined ###
+# Problème corrélation car les grandes variations d'inflations moins prises en compte par les GFMPs
+# Donc corrélation plus élevée entre GFMPs que pour les variables réelles
+# Pose problème pour les régressions
+accuracy = (np.abs(facteurs['Growth'] - CSR_Estim['Growth'])).mean()
+plt.title('Growth, CSR Mean Squared Error : '+str(accuracy))
+plt.plot(dates, facteurs['Growth'], label='Observed Growth')
+plt.plot(base_rolling_.index, CSR_Estim['Growth'], label='CSR Growth')
+plt.legend(loc='best')
+plt.show()
+
+
+
+
+sys.exit()
 
 ### Corrélation partielle avec les facteurs observés
 CSR_par_corr = PF_par_corr(CSR_macro, facteurs, macro_factors)
@@ -245,10 +300,10 @@ GFMP_ML_Weights = pd.DataFrame(np.dot(Left_GFMP_ML, np.dot(Mid_GFMP_ML, Right_GF
 GFMP_ML_Weights_Scaled = GFMP_ML_Weights / (GFMP_ML_Weights.std() * 100)
 
 dates = X_macro.reset_index()['Date']
-FMP_Estim = pd.DataFrame(np.dot(base_rolling, GFMP_ML_Weights_Scaled), columns=macro_factors, index=facteurs.index)
+CSR_Estim = pd.DataFrame(np.dot(base_rolling, CSR_Weights_Scaled), columns=macro_factors, index=facteurs.index)
 
 facteurs.to_csv('observed_infla_growth_stress.csv')
-FMP_Estim.to_csv('FMP_estimation_infla_growth_stress.csv')
+CSR_Estim.to_csv('CSR_estimation_infla_growth_stress.csv')
 
 ### Growth p.23 ###
 """
@@ -259,23 +314,27 @@ plt.legend(loc='best')
 plt.show()"""
 
 ### Inflation surprises p.23 ###
-plt.title('Inflation surprises')
+accuracy = (np.abs(facteurs['Inflation surprises'] - CSR_Estim['Inflation surprises'])).mean()
+plt.title('Inflation surprises, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Inflation surprises'], label='Observed')
-plt.plot(dates, FMP_Estim['Inflation surprises'], label='GFMP')
+plt.plot(dates, CSR_Estim['Inflation surprises'], label='CSR')
 plt.legend(loc='best')
 plt.show()
 ### Financial Stress p.23 ###
-plt.title('Financial Stress')
+accuracy = (np.abs(facteurs['Financial Stress'] - CSR_Estim['Financial Stress'])).mean()
+plt.title('Financial Stress, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Financial Stress'], label='Observed')
-plt.plot(dates, FMP_Estim['Financial Stress'], label='GFMP')
+plt.plot(dates, CSR_Estim['Financial Stress'], label='CSR')
 plt.legend(loc='best')
 plt.show()
 ### Growth & Inflation surprises combined ###
 # Problème corrélation car les grandes variations d'inflations moins prises en compte par les GFMPs
 # Donc corrélation plus élevée entre GFMPs que pour les variables réelles
 # Pose problème pour les régressions
-plt.plot(dates, facteurs['Growth'], label='Growth Observed')
-plt.plot(dates, facteurs['Inflation surprises'], label='IS Observed')
+accuracy = (np.abs(facteurs['Growth'] - CSR_Estim['Growth'])).mean()
+plt.title('Growth, CSR Mean Squared Error : '+str(accuracy))
+plt.plot(dates, facteurs['Growth'], label='Observed')
+plt.plot(dates, CSR_Estim['Growth'], label='CSR Observed')
 plt.legend(loc='best')
 plt.show()
 """

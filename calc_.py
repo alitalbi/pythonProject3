@@ -66,7 +66,7 @@ def fred_data(ticker):
 date_start = "1960-01-01"
 date_start2 = "2004-01-01"
 
-date_end = "2023-01-07"
+date_end = "2023-01-13"
 fred = Fred(api_key='f40c3edb57e906557fcac819c8ab6478')
 
 print("1")
