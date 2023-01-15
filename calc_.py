@@ -99,6 +99,9 @@ def export_yfinance_data(date_start,date_end):
     gas = yf.download("NG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
     gas.to_csv("gas.csv")
 
+    # Gas
+    gasoline_fund = yf.download("UGA", start=date_start, end=date_end, interval="1mo")[['Close']]
+    gasoline_fund.to_csv("gasoline_fund.csv")
     return 0
 
 
