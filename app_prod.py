@@ -544,7 +544,10 @@ def trends(dropdown, date_start, date_end):
         fig_secular_trends.layout.yaxis4.tickformat = ".2%"
         fig_secular_trends.layout.yaxis5.tickformat = ".2%"
         fig_secular_trends.layout.yaxis6.tickformat = ".2%"
-
+        fig_secular_trends.layout.yaxis7.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis8.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis9.tickformat = ".2%"
+        fig_secular_trends.layout.yaxis10.tickformat = ".2%"
         fig_secular_trends_2 = make_subplots(rows=2, cols=2)
 
         fig_secular_trends_2.add_trace(go.Scatter(x=wheat.index.to_list(), y=wheat.iloc[:,0]/100, name="Wheat 6m annualized growth",

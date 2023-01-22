@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from fredapi import Fred
 import pandas as pd
+import wget
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import dash_bootstrap_components as dbc
@@ -86,6 +87,9 @@ def export_yfinance_data(date_start,date_end):
     cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
     cooper_prices = cooper * 100
     cooper_prices.to_csv(cwd+"cooper_prices.csv")
+
+    os.remove("wage-growth-data.xlsx")
+    wget.download("http://atlantafed.org/-/media/documents/datafiles/chcs/wage-growth-tracker/wage-growth-data.xlsx")
 
     #Wheat
     wheat = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1mo")[['Close']]
@@ -221,7 +225,7 @@ wage_tracker.columns = ['date', "wage_tracker"]
 wage_tracker.set_index('date', inplace=True)
 
 wheat_ = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1d")[['Close']]
-oil_ = yf.download("CL=F", start=date_start, end=date_end, interval="1d")[['Close']]
+oil_ = yf.download("CL=F", start=date_start , end=date_end, interval="1d")[['Close']]
 gas_ = yf.download("NG=F", start=date_start, end=date_end, interval="1d")[['Close']]
 
 employment_level_wage_tracker = pd.concat([employment_level, wage_tracker], axis=1)
