@@ -674,12 +674,15 @@ def trends(dropdown, date_start, date_end):
         _5y_nominal = pd.read_csv(cwd + "_5y_nominal.csv", index_col="Date")
         _5y_nominal.index = pd.to_datetime(_5y_nominal.index)
 
+        #gasoline_fund = pd.read_csv(cwd + "gasoline_fund.csv", index_col="Date")
+        #gasoline_fund.index = pd.to_datetime(gasoline_fund.index)
         print("8")
         spread = _30y - _5y_real
 
         merged_data = pd.concat([spread, _5y_nominal, cooper_prices], axis=1)
         merged_data.dropna(inplace=True)
-        merged_data.columns = ["spread 30_5yr", "5y", "cooper", ]
+        merged_data.columns = ["spread 30_5yr", "5y", "cooper"]
+
 
         spread_norm = (spread - np.mean(spread)) / np.std(spread)
 
@@ -715,9 +718,10 @@ def trends(dropdown, date_start, date_end):
 
 
 
-        fig_brainard.add_trace(
-            go.Scatter(x=spread_cooper_diff.index.to_list(), y=spread_cooper_diff.iloc[:, 0], name="30y_5y_spread - Cooper (normalized)",
-                       mode="lines", line=dict(width=2, color='blue')), secondary_y=False, col=1, row=1)
+       # fig_brainard.add_trace(
+       #     go.Scatter(x=spread_cooper_diff.index.to_list(), y=spread_cooper_diff.iloc[:, 0], name="30y_5y_spread - Cooper (normalized)",
+       #                mode="lines", line=dict(width=2, color='blue')), secondary_y=False, col=1, row=1)
+
         fig_brainard.add_trace(
             go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 0], name="Spread",
                        mode="lines", line=dict(width=2, color='white')), secondary_y=False, col=1, row=1)
@@ -727,6 +731,9 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 2], name="Cooper prices",
                                           mode="lines", line=dict(width=2, color='orange')), secondary_y=True, col=1,
                                row=1)
+        #fig_brainard.add_trace(go.Scatter(x=merged_data.index.to_list(), y=merged_data.iloc[:, 3], name="Gasoline UGA",
+        #                                  mode="lines", line=dict(width=2, color='blue')), secondary_y=True, col=1,
+         #                      row=1)
 
 
         merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
@@ -746,10 +753,11 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.add_trace(go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["cooper"], name="Cooper prices",
                                           mode="lines", line=dict(width=2, color='orange'), showlegend=False),
                                secondary_y=True, col=1, row=2)
-        fig_brainard.add_trace(
-            go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
-                       mode="lines", line=dict(width=2, color='red'), showlegend=True), secondary_y=True,
-            col=1, row=1)
+      #  fig_brainard.add_trace(
+       #     go.Scatter(x=merged_.index.to_list(), y=merged_["dummy_cooper"], name="dummy Up/Down Cooper",
+       #                mode="lines", line=dict(width=2, color='red'), showlegend=True), secondary_y=True,
+        #    col=1, row=1)
+
         fig_brainard.add_trace(
             go.Scatter(x=regimes_5y_nominal.index.to_list(), y=regimes_5y_nominal.iloc[:,0],
                        name="regimes_cooper_spread",
@@ -758,7 +766,7 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.add_trace(
             go.Scatter(x=regimes_5y_nominal.index.to_list(), y=regimes_5y_nominal.iloc[:,1],
                        name="5y_nominal_dummy",
-                       mode="lines", line=dict(width=2, color='purple')), secondary_y=True, col=1, row=3)
+                       mode="lines", line=dict(width=2, color='purple'),showlegend=False), secondary_y=True, col=1, row=3)
         fig_brainard.update_layout(
             template="plotly_dark",
             title={
@@ -846,7 +854,7 @@ def trends(dropdown, date_start, date_end):
 # pass
 if __name__ == "__main__":
     # host = socket.gethostbyname(socket.gethostname())
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=True, port=8080)
 
 
 
