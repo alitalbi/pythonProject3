@@ -539,6 +539,7 @@ def trends(dropdown, date_start, date_end):
             )
         )
 
+        fig_secular_trends.layout.yaxis.tickformat = ".2%"
         fig_secular_trends.layout.yaxis2.tickformat = ".2%"
         fig_secular_trends.layout.yaxis3.tickformat = ".2%"
         fig_secular_trends.layout.yaxis4.tickformat = ".2%"
