@@ -130,7 +130,7 @@ app.layout = html.Div(style={'backgroundColor': "rgb(17, 17, 17)"}, children=[
         dcc.Dropdown(
             id='dropdown',
             options=[
-                {'label': 'Macro Factor-Mimicking Portfolios', 'value': 'Macro Factor-Mimicking Portfolios'},
+                {'label': 'Nowcasting indicators', 'value': 'Nowcasting indicators'},
                 {'label': 'Monetary Policy', 'value': 'Monetary Policy'},
                 {'label': 'Growth', 'value': 'Growth'},
                 {'label': 'Inflation Outlook', 'value': 'Inflation Outlook'},
@@ -718,7 +718,7 @@ def trends(dropdown, date_start, date_end):
 
 
         fig_brainard = make_subplots(cols=1, rows=3, specs=[[{"secondary_y": True}], [{"secondary_y": True}],[{"secondary_y": True}]],
-                                     subplot_titles=["Levels", "Returns","Regimes 1m annualized growth cooper and spread30y_5y vs "])
+                                     subplot_titles=["Levels", "Returns","Regimes 3m annualized growth cooper and spread30y_5y vs 5y nominal"])
 
 
 
@@ -793,7 +793,7 @@ def trends(dropdown, date_start, date_end):
         fig_brainard.update_layout(height=1000, width=1500)
 
         return dcc.Graph(figure=fig_brainard)
-    elif dropdown == "Macro Factor-Mimicking Portfolios":
+    elif dropdown == "Nowcasting indicators":
         observed_infla_growth_stress = pd.read_csv(cwd+"observed_infla_growth_stress.csv",index_col="Date")
         FMP_estimation_infla_growth_stress = pd.read_csv(cwd + "FMP_estimation_infla_growth_stress.csv", index_col="Date")
 
@@ -835,7 +835,7 @@ def trends(dropdown, date_start, date_end):
         fig_mimicking.update_layout(
             template="plotly_dark",
             title={
-                'text': "Macro Factor-Mimicking Portfolios",
+                'text': "Nowcasting growth, inflation and financial stress",
                 'y': 1,
                 'x': 0.5,
                 'xanchor': 'center',

@@ -24,7 +24,7 @@ base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
 
 def func_merged_data():
     l = ["SWDA.MI","TLT","LQD","TIP5.L","GC=F","XLB","IYE","DX-Y.NYB","FXC"]
-    base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB FXC", start="1971-01-01", end="2023-01-10",
+    base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB NG=F", start="2000-01-01", end="2023-01-22",
                 interval="1mo")[['Adj Close']]
     base = (base / base.shift(1))-1
     base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
@@ -162,14 +162,14 @@ plt.title('Inflation surprises, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Inflation surprises'], label='Observed Inflation')
 plt.plot(base_rolling_.index, CSR_Estim['Inflation surprises'], label='CSR Inflation')
 plt.legend(loc='best')
-#plt.show()
+plt.show()
 ### Financial Stress p.23 ###
 accuracy = (np.abs(facteurs['Financial Stress'] - CSR_Estim['Financial Stress'])).mean()
 plt.title('Financial Stress, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Financial Stress'], label='Observed Financial')
 plt.plot(base_rolling_.index, CSR_Estim['Financial Stress'], label='CSR Financial')
 plt.legend(loc='best')
-#plt.show()
+plt.show()
 ### Growth & Inflation surprises combined ###
 # Problème corrélation car les grandes variations d'inflations moins prises en compte par les GFMPs
 # Donc corrélation plus élevée entre GFMPs que pour les variables réelles
