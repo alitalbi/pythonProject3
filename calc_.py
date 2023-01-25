@@ -84,7 +84,7 @@ def export_yfinance_data(date_start,date_end):
     _5y_nominal.to_csv(cwd+"_5y_nominal.csv")
 
     #Cooper
-    cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
+    cooper = yf.download("HG=F", start=date_start, end=date_end, interval="1d")[['Close']]
     cooper_prices = cooper * 100
     cooper_prices.to_csv(cwd+"cooper_prices.csv")
 
@@ -92,19 +92,19 @@ def export_yfinance_data(date_start,date_end):
     wget.download("http://atlantafed.org/-/media/documents/datafiles/chcs/wage-growth-tracker/wage-growth-data.xlsx")
 
     #Wheat
-    wheat = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1mo")[['Close']]
+    wheat = yf.download("ZW=F", start=date_start, end=datetime.datetime.now(), interval="1d")[['Close']]
     wheat.to_csv("wheat.csv")
 
     #Oil
-    oil = yf.download("CL=F", start=date_start, end=date_end, interval="1mo")[['Close']]
+    oil = yf.download("CL=F", start=date_start, end=date_end, interval="1d")[['Close']]
     oil.to_csv("oil.csv")
 
     #Gas
-    gas = yf.download("NG=F", start=date_start, end=date_end, interval="1mo")[['Close']]
+    gas = yf.download("NG=F", start=date_start, end=date_end, interval="1d")[['Close']]
     gas.to_csv("gas.csv")
 
     # Gas
-    gasoline_fund = yf.download("UGA", start=date_start, end=date_end, interval="1mo")[['Close']]
+    gasoline_fund = yf.download("UGA", start=date_start, end=date_end, interval="1d")[['Close']]
     gasoline_fund.to_csv("gasoline_fund.csv")
     return 0
 

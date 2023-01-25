@@ -701,14 +701,14 @@ def trends(dropdown, date_start, date_end):
         merged = pd.concat([cooper_prices, spread, _5y_nominal], axis=1)
         merged.columns = ["cooper", "spread_30y_5y", "5y_nominal"]
         merged.dropna(inplace=True)
-        average = merged.rolling(90).mean()
+        average = merged.rolling(30).mean()
         # Calculate the annualized growth rate
-        annualized_6m_smoothed_growth_rate = ( (merged[90:] / average)**(365/90) - 1 ) * 100
+        annualized_6m_smoothed_growth_rate = ( (merged[30:] / average)**(365/30) - 1 ) * 100
 
         annualized_6m_smoothed_growth_rate.dropna(inplace=True)
         for col in annualized_6m_smoothed_growth_rate.columns:
             annualized_6m_smoothed_growth_rate[col + "_dummy"] = np.where(annualized_6m_smoothed_growth_rate[col] > 0,
-                                                                          1, 0)
+                                                                          1, -1)
 
         annualized_6m_smoothed_growth_rate['regimes_cooper_spread'] = annualized_6m_smoothed_growth_rate[
             ['cooper_dummy', "spread_30y_5y_dummy"]].sum(axis=1)
@@ -858,7 +858,7 @@ def trends(dropdown, date_start, date_end):
 # pass
 if __name__ == "__main__":
     # host = socket.gethostbyname(socket.gethostname())
-    app.run_server(debug=True, port=8080)
+    app.run_server(debug=True, port=8070)
 
 
 
