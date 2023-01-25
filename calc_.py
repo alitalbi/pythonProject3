@@ -76,11 +76,11 @@ PATH_DATA = "/Users/talbi/Downloads/"
 def export_yfinance_data(date_start,date_end):
 
     #30y nominal
-    _30y = yf.download("^TYX", start=date_start, end=date_end, interval="1mo")[['Close']]
+    _30y = yf.download("^TYX", start=date_start, end=date_end, interval="1d")[['Close']]
     _30y.to_csv(cwd+"_30y.csv")
 
     #5y nominal
-    _5y_nominal = yf.download("^FVX", start=date_start, end=date_end, interval="1mo")[['Close']]
+    _5y_nominal = yf.download("^FVX", start=date_start, end=date_end, interval="1d")[['Close']]
     _5y_nominal.to_csv(cwd+"_5y_nominal.csv")
 
     #Cooper
