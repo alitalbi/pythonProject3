@@ -30,18 +30,22 @@ def commo_smooth_data(internal_ticker, date_start,date_start2,date_end):
     data_2.index = pd.to_datetime(data_2.index)
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
-    average = data_.iloc[:, 0].rolling(11).mean()
+    data_["shifted"] = data_.shift(22)
+    #average = data_.iloc[:, 0].rolling(22).mean()
+    data_["30d_growth_rate"] = ((data_["Close"] / data_["shifted"]) ** (22 / 264) - 1) * 100
 
-    # Calculate the annualized growth rate
-    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][11:] / average) ** (12 / 6) - 1
-
+    data_['mean_30d_growth'] = data_["30d_growth_rate"].rolling(3).mean()
+    data_["growth_daily"] = data_2['Close'].pct_change(periods=1)
+    data_["growth_daily"] = data_2["growth_daily"].rolling(66).mean()
+    # average = data_.iloc[:, 0].rolling(22).mean()
+    #data_2["3m_growth_rate"] = ((data_2["Close"] / data_2["shifted"]) ** (66 / 264) - 1) * 100
+    #data_2["3m_growth_rate"] = data_2["3m_growth_rate"].rolling(66).mean()
     # Multiply the result by 100 and store it in the _6m_smoothing_growth column
-    data_['_6m_smoothing_growth'] = 100 * annualized_6m_smoothed_growth_rate
-    data_2['mom_average'] = 1000 * data_2.iloc[:, 0].pct_change(periods=1)
-    data_2['10 yr average'] = data_2['mom_average'].rolling(120).mean()
+    #data_['_6m_smoothing_growth'] = 100 * annualized_6m_smoothed_growth_rate
+
     data_.dropna(inplace=True)
     data_2.dropna(inplace=True)
-    return data_[['_6m_smoothing_growth']], data_2[['10 yr average']]
+    return data_[['30d_growth_rate']], data_['growth_daily']
 
 def smooth_data(internal_ticker, date_start, date_start2, date_end):
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
