@@ -35,8 +35,8 @@ def commo_smooth_data(internal_ticker, date_start,date_start2,date_end):
     data_["30d_growth_rate"] = ((data_["Close"] / data_["shifted"]) ** (22 / 264) - 1) * 100
 
     data_['mean_30d_growth'] = data_["30d_growth_rate"].rolling(3).mean()
-    data_["growth_daily"] = data_2['Close'].pct_change(periods=1)
-    data_["growth_daily"] = data_2["growth_daily"].rolling(66).mean()
+    #data_["growth_daily"] = data_['Close'].pct_change(periods=1)
+    data_["growth_daily"] = data_["30d_growth_rate"].rolling(66).mean()
     # average = data_.iloc[:, 0].rolling(22).mean()
     #data_2["3m_growth_rate"] = ((data_2["Close"] / data_2["shifted"]) ** (66 / 264) - 1) * 100
     #data_2["3m_growth_rate"] = data_2["3m_growth_rate"].rolling(66).mean()
@@ -45,7 +45,7 @@ def commo_smooth_data(internal_ticker, date_start,date_start2,date_end):
 
     data_.dropna(inplace=True)
     data_2.dropna(inplace=True)
-    return data_[['30d_growth_rate']], data_['growth_daily']
+    return data_[['30d_growth_rate']], data_[['growth_daily']]
 
 def smooth_data(internal_ticker, date_start, date_start2, date_end):
     data_ = pd.read_csv(internal_ticker+".csv",index_col="Unnamed: 0")
