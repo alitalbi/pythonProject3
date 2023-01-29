@@ -61,10 +61,11 @@ def smooth_data(internal_ticker, date_start, date_start2, date_end):
     data_2.index = pd.to_datetime(data_2.index)
     # creating 6m smoothing growth column and 10yr average column
     # Calculate the smoothed average
-    average =  data_.iloc[:, 0].rolling(11).mean()
 
+    average =  data_.iloc[:, 0].rolling(6).mean()
+    shifted = data_.iloc[:, 0].shift(6)
     # Calculate the annualized growth rate
-    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][11:] / average) ** (12/6) - 1
+    annualized_6m_smoothed_growth_rate = (data_.iloc[:, 0][5:] / average) ** (12/6) - 1
 
     # Multiply the result by 100 and store it in the _6m_smoothing_growth column
     data_['_6m_smoothing_growth'] = 100*annualized_6m_smoothed_growth_rate
@@ -221,7 +222,7 @@ def trends(dropdown, date_start, date_end):
         composite_growth_10.dropna(inplace=True)
         composite_growth_10 = pd.DataFrame(composite_growth_10.mean(axis=1))
         composite_growth_10.columns = ["10 yr average"]
-
+        composite_growth_10.to_csv("composite_growth.csv")
         fig_ = go.Figure()
 
         # drop the blank values
@@ -260,15 +261,6 @@ def trends(dropdown, date_start, date_end):
             legend=dict(
                 title=None, orientation="h", y=0.97, yanchor="bottom", x=0.5, xanchor="center"
             ),
-        )
-        fig_.update_layout(
-            xaxis=dict(
-
-                rangeslider=dict(
-                    visible=True
-                ),
-                type="date"
-            )
         )
         fig_.update_layout(xaxis=dict(rangeselector=dict(font=dict(color="black"))))
         fig_cyclical_trends = make_subplots(rows=3, cols=2, subplot_titles=[pce_title, indpro_title
@@ -743,22 +735,37 @@ def trends(dropdown, date_start, date_end):
         #                                  mode="lines", line=dict(width=2, color='blue')), secondary_y=True, col=1,
          #                      row=1)
 
+        def returns_infla_data(data_,col_num,type):
+            data_["shifted"] = data_.iloc[:, col_num].shift(22)
+            if type == "return":
+                # average = data_.iloc[:, 0].rolling(22).mean()
+                data_["30d_growth_rate"] = ((data_.iloc[:,col_num] / data_["shifted"]) ** (22 / 264) - 1) * 100
 
-        merged_data_spread_var = pd.DataFrame(merged_data.iloc[:, 0].resample("3M").last().diff())
-        merged_data_5y_var = pd.DataFrame(merged_data.iloc[:, 1].resample("3M").last().diff())
-        merged_data_cooper_ret = (pd.DataFrame(merged_data.iloc[:, 2].resample("3M").agg(lambda x: x[-1]))).pct_change()
+                return data_[["30d_growth_rate"]]
+            elif type == "delta":
+                data_['30d_delta']  = data_.iloc[:,col_num] - data_["shifted"]
+                return data_["30d_delta"]
+        merged_data_spread_var = returns_infla_data(merged_data,0,"delta")
+        merged_data_5y_var = returns_infla_data(merged_data,1,"delta")
+        merged_data_cooper_ret = returns_infla_data(merged_data,2,"return")
         merged_ = pd.concat([merged_data_spread_var, merged_data_5y_var, merged_data_cooper_ret], axis=1)
         merged_.dropna(inplace=True)
-        merged_['dummy_cooper'] = np.where(merged_['cooper'] > 0, 1, -1)
+        merged_.columns = ["cooper", "spread_30y_5y", "5y_nominal"]
+        merged_['dummy_cooper'] = np.where(merged_.iloc[:,2] > 0, 1, -1)
+
+       # for col in annualized_6m_smoothed_growth_rate.columns:
+       #     annualized_6m_smoothed_growth_rate[col + "_dummy"] = np.where(annualized_6m_smoothed_growth_rate[col] > 0,
+       #                                                                   1, 0)
+
         fig_brainard.add_trace(
-            go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["spread_30y_5y"], name="Spread 30-5y",
+            go.Scatter(x=merged_.index.to_list(), y=merged_["spread_30y_5y"], name="Spread 30-5y",
                        mode="lines", line=dict(width=2, color='white'), showlegend=False), secondary_y=False, col=1,
             row=2)
-        fig_brainard.add_trace(go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["5y_nominal"], name="US 5y",
+        fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["5y_nominal"], name="US 5y",
                                           mode="lines", line=dict(width=2, color='purple'), showlegend=False),
                                secondary_y=False, col=1,
                                row=2)
-        fig_brainard.add_trace(go.Scatter(x=annualized_6m_smoothed_growth_rate.index.to_list(), y=annualized_6m_smoothed_growth_rate["cooper"], name="Cooper prices",
+        fig_brainard.add_trace(go.Scatter(x=merged_.index.to_list(), y=merged_["cooper"], name="Cooper prices",
                                           mode="lines", line=dict(width=2, color='orange'), showlegend=False),
                                secondary_y=True, col=1, row=2)
       #  fig_brainard.add_trace(
@@ -862,7 +869,7 @@ def trends(dropdown, date_start, date_end):
 # pass
 if __name__ == "__main__":
     # host = socket.gethostbyname(socket.gethostname())
-    app.run_server(debug=True, port=8070)
+    app.run_server(debug=True, port=8050)
 
 
 

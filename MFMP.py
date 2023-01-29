@@ -13,26 +13,44 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import os
 from datetime import datetime
-
 cwd = os.getcwd() +"/"
-########## Importation des données et retraitements ##########
+PATH_DATA = r"/Users/talbi/Downloads/"
 PATH_DATA = r"/Users/talbi/Downloads/"
 file_name = "MEI_CLI_10012023142556508.csv"
-### Import des séries du fichiers ###
-base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+def get_data():
+    cwd = os.getcwd() +"/"
+
+    ########## Importation des données et retraitements ##########
+
+    ### Import des séries du fichiers ###
+    base = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+    base.index=pd.Series(base.index.to_list()).apply(lambda x:x.replace(day=1))
+    base_new=pd.read_excel(PATH_DATA+'DATA_REPLICATION_.xlsx',index_col=0)
+    conc=pd.concat([base,base_new])
+    conc.sort_index(inplace=True)
+    conc = conc[~conc.index.duplicated(keep='first')]
+    print("hi")
 
 
+    return conc
+print("h")
 def func_merged_data():
-    l = ["SWDA.MI","TLT","LQD","TIP5.L","GC=F","XLB","IYE","DX-Y.NYB","FXC"]
-    base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB NG=F", start="2000-01-01", end="2023-01-22",
-                interval="1mo")[['Adj Close']]
-    base = (base / base.shift(1))-1
-    base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
+    base = get_data()
+    #base = pd.read_excel(cwd + 'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+    #base.index = pd.Series(base.index.to_list()).apply(lambda x: x.replace(day=1))
+    #l = ["SWDA.MI","TLT","LQD","TIP5.L","GC=F","XLB","IYE","DX-Y.NYB","FXC"]
+   # base = yf.download("SWDA.MI TLT LQD TIP5.L GC=F XLB IYE DX-Y.NYB NG=F", start="2000-01-01", end="2023-01-22",
+    #            interval="1mo")[['Adj Close']]
+    #base = (base / base.shift(1))-1
+    #base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
+
+    #base = pd.merge(base, base_new, how="outer", validate="one_to_one")
+
     libor_us = pd.read_csv(PATH_DATA + "LIBOR USD.csv", index_col="Date")
     libor_us.index = pd.to_datetime(libor_us.index)
     libor_us = libor_us.resample("1M").mean()
     libor_us.index = pd.Series(libor_us.index.to_list()).apply(lambda x: (x.replace(day=1)))
-    base.dropna(inplace=True)
+
 
     lib_merged_data = pd.concat([libor_us, base], axis=1)
     lib_merged_data.dropna(inplace=True)
@@ -40,8 +58,10 @@ def func_merged_data():
     base = lib_merged_data.drop("1M",axis=1)
     return libor,base
 libor_,base_ = func_merged_data()
+libor=libor_
+base=base_
 macro = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Macro', index_col=0)
-libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
+#libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
 growth = (pd.read_csv(PATH_DATA + file_name,index_col="TIME")[['Value']])
 
 growth.columns = ['Growth']
