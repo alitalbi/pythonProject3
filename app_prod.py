@@ -222,8 +222,9 @@ def trends(dropdown, date_start, date_end):
         composite_growth_10.dropna(inplace=True)
         composite_growth_10 = pd.DataFrame(composite_growth_10.mean(axis=1))
         composite_growth_10.columns = ["10 yr average"]
-        composite_growth_10.to_csv("composite_growth.csv")
+        composite_growth.to_csv("/Users/talbi/Downloads/composite_growth.csv")
         fig_ = go.Figure()
+
 
         # drop the blank values
 

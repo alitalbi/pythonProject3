@@ -45,21 +45,25 @@ def func_merged_data():
     #base.columns = ['WEQ','GLT','CRE',"ILB","GOLD","INM","ENG","DXY","FXCS"]
 
     #base = pd.merge(base, base_new, how="outer", validate="one_to_one")
-
+    libor = pd.read_excel(cwd + 'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
+    libor.index = pd.Series(libor.index.to_list()).apply(lambda x: x.replace(day=1))
     libor_us = pd.read_csv(PATH_DATA + "LIBOR USD.csv", index_col="Date")
     libor_us.index = pd.to_datetime(libor_us.index)
-    libor_us = libor_us.resample("1M").mean()
+    libor_us = (libor_us.resample("1M").mean())/100
     libor_us.index = pd.Series(libor_us.index.to_list()).apply(lambda x: (x.replace(day=1)))
-
+    conc_ = pd.concat([libor, libor_us])
+    conc_.sort_index(inplace=True)
+    #conc_ = conc_[~conc_.index.duplicated(keep='first')]
 
     lib_merged_data = pd.concat([libor_us, base], axis=1)
     lib_merged_data.dropna(inplace=True)
     libor = lib_merged_data[["1M"]]
     base = lib_merged_data.drop("1M",axis=1)
-    return libor,base
+    return libor_us,base
 libor_,base_ = func_merged_data()
-libor=libor_
-base=base_
+#libor=libor_
+base = pd.read_excel(cwd + 'DATA_REPLICATION.xlsx', 'Base', index_col=0)
+libor = pd.read_excel(cwd + 'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
 macro = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Macro', index_col=0)
 #libor = pd.read_excel(cwd+'DATA_REPLICATION.xlsx', 'Libor', index_col=0)
 growth = (pd.read_csv(PATH_DATA + file_name,index_col="TIME")[['Value']])
@@ -71,7 +75,7 @@ growth.sort_index(inplace=True)
 ### Excess returns over USD Libor 1 month for non spread base assets ###
 non_spread_assets = ['WEQ', 'GLT', 'GOLD', 'INM', 'ENG', 'DXY']
 base[non_spread_assets] = base[non_spread_assets] - libor.values / 12
-base_[non_spread_assets] = base_[non_spread_assets] - libor_.values / 12
+#base_[non_spread_assets] = base_[non_spread_assets] - libor_.values / 12
 ### Turbulence Index by Chow ###
 Turb_index = Turbulence_Index(base)
 
@@ -109,8 +113,8 @@ graph_macro = macro.reset_index()
 base_capi = np.cumprod(1 + base.iloc[::-1]).iloc[::-1]
 base_rolling = (base_capi / base_capi.shift(-12) - 1)[:-12:]
 
-base_capi_ = np.cumprod(1 + base_.iloc[::-1]).iloc[::-1]
-base_rolling_ = (base_capi_ / base_capi_.shift(-12) - 1)[:-12:]
+#base_capi_ = np.cumprod(1 + base_.iloc[::-1]).iloc[::-1]
+#base_rolling_ = (base_capi_ / base_capi_.shift(-12) - 1)[:-12:]
 ### Version sommée ###
 base_s_rolling = base.iloc[::-1].rolling(12).sum().iloc[::-1][:-12:]
 
@@ -175,19 +179,19 @@ CSR_macro = pd.DataFrame(np.dot(base_rolling, CSR_Weights), columns=macro_factor
 print("hi")
 
 dates = X_macro.reset_index()['Date']
-CSR_Estim = pd.DataFrame(np.dot(base_rolling_, CSR_Weights_Scaled), columns=macro_factors, index=base_rolling_.index)
+CSR_Estim = pd.DataFrame(np.dot(base_rolling, CSR_Weights_Scaled), columns=macro_factors, index=base_rolling.index)
 ### Inflation surprises p.23 ###
 accuracy = (np.abs(facteurs['Inflation surprises'] - CSR_Estim['Inflation surprises'])).mean()
 plt.title('Inflation surprises, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Inflation surprises'], label='Observed Inflation')
-plt.plot(base_rolling_.index, CSR_Estim['Inflation surprises'], label='CSR Inflation')
+plt.plot(base_rolling.index, CSR_Estim['Inflation surprises'], label='CSR Inflation')
 plt.legend(loc='best')
 plt.show()
 ### Financial Stress p.23 ###
 accuracy = (np.abs(facteurs['Financial Stress'] - CSR_Estim['Financial Stress'])).mean()
 plt.title('Financial Stress, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Financial Stress'], label='Observed Financial')
-plt.plot(base_rolling_.index, CSR_Estim['Financial Stress'], label='CSR Financial')
+plt.plot(base_rolling.index, CSR_Estim['Financial Stress'], label='CSR Financial')
 plt.legend(loc='best')
 plt.show()
 ### Growth & Inflation surprises combined ###
@@ -197,7 +201,7 @@ plt.show()
 accuracy = (np.abs(facteurs['Growth'] - CSR_Estim['Growth'])).mean()
 plt.title('Growth, CSR Mean Squared Error : '+str(accuracy))
 plt.plot(dates, facteurs['Growth'], label='Observed Growth')
-plt.plot(base_rolling_.index, CSR_Estim['Growth'], label='CSR Growth')
+plt.plot(base_rolling.index, CSR_Estim['Growth'], label='CSR Growth')
 plt.legend(loc='best')
 plt.show()
 
